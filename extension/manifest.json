@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "CkiLePatron",
+  "version": "1.0",
+  "description": "Ajouter un patron Klafoutis à CkiLePatron depuis sa page produit",
+  "permissions": ["activeTab", "scripting", "tabs"],
+  "host_permissions": [
+    "https://klafoutis.com/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Ajouter à CkiLePatron",
+    "default_icon": "icon.png"
+  },
+  "icons": { "48": "icon.png", "128": "icon.png" },
+  "content_scripts": [
+    {
+      "matches": ["https://klafoutis.com/*/products/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

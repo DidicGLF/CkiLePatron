@@ -1,0 +1,14 @@
+# Ignorer un fichier précis
+
+
+# Ignorer un dossier entier
+patrons/
+.env
+
+# Ignorer tous les fichiers d'un type
+# *.log
+# *.zip
+
+# Ignorer partout sauf un fichier spécifique
+# *.env
+# !.env.example

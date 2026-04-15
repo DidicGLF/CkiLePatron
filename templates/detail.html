@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}{{ patron.nom }} — CkiLePatron{% endblock %}
+
+{% block content %}
+<div class="detail-page">
+
+  <div class="detail-header">
+    <a href="{{ url_for('index') }}" class="retour-lien">← Tous les patrons</a>
+    <div class="detail-header-actions">
+      {% if patron.marque %}
+        {% if patron.marque_url %}
+          <a href="{{ patron.marque_url }}" target="_blank" rel="noopener"
+             class="carte-domaine carte-domaine--header carte-domaine--link">{{ patron.marque }}</a>
+        {% else %}
+          <span class="carte-domaine carte-domaine--header">{{ patron.marque }}</span>
+        {% endif %}
+      {% endif %}
+      <a href="{{ url_for('modifier', slug=patron.slug) }}" class="btn btn-secondary btn-sm">✎ Modifier</a>
+      <form method="post" action="{{ url_for('supprimer', slug=patron.slug) }}"
+            onsubmit="return confirm('Supprimer « {{ patron.nom }} » et tous ses fichiers ?')">
+        <button type="submit" class="btn btn-danger btn-sm">✕ Supprimer</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="detail-corps">
+
+    <!-- Image -->
+    <div class="detail-image-col">
+      {% if patron.image %}
+        <img src="{{ url_for('fichier', slug=patron.slug, filename=patron.image) }}"
+             alt="{{ patron.nom }}" class="detail-image" />
+      {% else %}
+        <div class="detail-image-vide">
+          <span>✂</span>
+          <p>Pas d'image</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Infos + fichiers -->
+    <div class="detail-info-col">
+
+      <div class="detail-badges">
+        {% if patron.est_famille %}
+          <span class="cible-badge cible-famille cible-lg">Famille</span>
+          {% for c in patron.cibles_dispo %}
+            <span class="cible-badge cible-{{ c | lower | replace('é','e') }} cible-sm">{{ c }}</span>
+          {% endfor %}
+        {% else %}
+          <span class="cible-badge cible-{{ patron.cible | lower | replace('é','e') | replace('è','e') }} cible-lg">
+            {{ patron.cible }}
+          </span>
+        {% endif %}
+      </div>
+
+      <h1 class="detail-nom">{{ patron.nom }}</h1>
+      {% if patron.description %}
+        <p class="detail-description">{{ patron.description }}</p>
+      {% endif %}
+
+      <div class="detail-difficulte">
+        <form class="diff-inline" data-url="{{ url_for('set_difficulte', slug=patron.slug) }}">
+          <div class="star-picker star-picker--lg">
+            {% for i in [5, 4, 3, 2, 1] %}
+            <input type="radio" name="difficulte" id="dd{{ i }}" value="{{ i }}"
+                   {% if patron.difficulte == i %}checked{% endif %} />
+            <label for="dd{{ i }}"
+                   title="{{ ['','Débutant','Facile','Intermédiaire','Avancé','Expert'][i] }}">✌</label>
+            {% endfor %}
+            <input type="radio" name="difficulte" id="dd0" value="0"
+                   {% if not patron.difficulte %}checked{% endif %} />
+            <label for="dd0" class="star-reset" title="Effacer">✕</label>
+          </div>
+        </form>
+        <span class="diff-label-texte" id="diff-detail-label">
+          {% if patron.difficulte %}niveau : {{ ['','Débutant','Facile','Intermédiaire','Avancé','Expert'][patron.difficulte] }}{% endif %}
+        </span>
+      </div>
+
+      {% if patron.url %}
+        <a href="{{ patron.url }}" target="_blank" rel="noopener" class="detail-url">
+          🔗 Voir le produit sur le site
+        </a>
+      {% endif %}
+
+      {% if patron.notes %}
+        <div class="detail-notes">
+          <h2>Notes</h2>
+          <p>{{ patron.notes }}</p>
+        </div>
+      {% endif %}
+
+      <!-- ─── Fichiers par cible ─── -->
+      <div class="fichiers-section">
+
+        {% if patron.est_famille %}
+          {% for cible in patron.cibles_dispo %}
+            <div class="fichiers-groupe">
+              <h3 class="fichiers-groupe-titre">
+                <span class="cible-badge cible-{{ cible | lower | replace('é','e') }}">{{ cible }}</span>
+              </h3>
+              <div class="fichiers-liste">
+                {% set f = patron.fichiers[cible] %}
+                {% if f.get('projecteur') %}
+                  <a href="{{ url_for('projeter', slug=patron.slug, cible=cible) }}"
+                     class="btn btn-projection" target="_blank">⊞ Projeter</a>
+                {% endif %}
+                {% if f.get('a4') %}
+                  <a href="{{ url_for('fichier', slug=patron.slug, filename=f.a4) }}"
+                     class="btn btn-fichier" target="_blank">📄 A4</a>
+                {% endif %}
+                {% if f.get('imprimeur') %}
+                  <a href="{{ url_for('fichier', slug=patron.slug, filename=f.imprimeur) }}"
+                     class="btn btn-fichier" target="_blank">🖨 Imprimeur</a>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+
+        {% else %}
+          {% for cible in patron.cibles_dispo %}
+            {% set f = patron.fichiers[cible] %}
+            <div class="fichiers-liste fichiers-liste--solo">
+              {% if f.get('projecteur') %}
+                <a href="{{ url_for('projeter', slug=patron.slug, cible=cible) }}"
+                   class="btn btn-projection" target="_blank">⊞ Projeter</a>
+              {% endif %}
+              {% if f.get('a4') %}
+                <a href="{{ url_for('fichier', slug=patron.slug, filename=f.a4) }}"
+                   class="btn btn-fichier" target="_blank">📄 Patron A4</a>
+              {% endif %}
+              {% if f.get('imprimeur') %}
+                <a href="{{ url_for('fichier', slug=patron.slug, filename=f.imprimeur) }}"
+                   class="btn btn-fichier" target="_blank">🖨 Grand format</a>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        {% if patron.tutoriel %}
+          <div class="fichiers-tutoriel">
+            <a href="{{ url_for('fichier', slug=patron.slug, filename=patron.tutoriel) }}"
+               class="btn btn-tutoriel" target="_blank">📖 Tutoriel</a>
+          </div>
+        {% endif %}
+
+      </div><!-- /fichiers-section -->
+    </div><!-- /detail-info-col -->
+  </div><!-- /detail-corps -->
+</div>
+
+<script>
+const NIVEAUX = ['', 'Débutant', 'Facile', 'Intermédiaire', 'Avancé', 'Expert'];
+const form    = document.querySelector('.diff-inline');
+const label   = document.getElementById('diff-detail-label');
+
+form.querySelectorAll('input[name="difficulte"]').forEach(r => {
+  r.addEventListener('change', () => {
+    const val = parseInt(r.value);
+    label.textContent = val ? 'niveau : ' + NIVEAUX[val] : '';
+    fetch(form.dataset.url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'difficulte=' + val
+    });
+  });
+});
+</script>
+{% endblock %}

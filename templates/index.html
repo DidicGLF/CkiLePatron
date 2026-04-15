@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Patrons — CkiLePatron{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>Mes patrons</h1>
+    <p class="subtitle">
+      {{ patrons|length }}
+      {% if patrons|length != total %} sur {{ total }} {% endif %}
+      patron{% if total != 1 %}s{% endif %}
+    </p>
+  </div>
+  <div class="vue-toggle" id="vue-toggle">
+    <button class="vue-btn vue-btn--grille active" id="btn-grille" title="Vue grille">⊞</button>
+    <button class="vue-btn vue-btn--liste" id="btn-liste" title="Vue liste">≡</button>
+  </div>
+</section>
+
+{% set filtres_actifs = (cible_filtre or marque_filtre or difficulte_filtre) %}
+{% set nb_filtres = [cible_filtre, marque_filtre, difficulte_filtre] | select | list | length %}
+
+<section class="filtres{% if filtres_actifs %} filtres--open{% endif %}">
+  <form method="get" action="{{ url_for('index') }}">
+
+    <div class="filtres-barre">
+      <input type="text" name="q" placeholder="Rechercher un patron…"
+             value="{{ recherche }}" class="input-recherche" />
+      <button type="button" class="filtres-toggle" id="filtres-toggle">
+        Filtres{% if nb_filtres %} <span class="filtres-count">{{ nb_filtres }}</span>{% endif %}
+        <span class="filtres-chevron">▾</span>
+      </button>
+      {% if filtres_actifs %}
+        <a href="{{ url_for('index', q=recherche) }}" class="filtres-reset" title="Effacer les filtres">✕</a>
+      {% endif %}
+    </div>
+
+    <div class="filtres-panel" id="filtres-panel">
+      <div class="filtre-row">
+        <span class="filtre-label">Cible :</span>
+        <div class="filtre-pills">
+          <a href="{{ url_for('index', marque=marque_filtre, q=recherche) }}"
+             class="pill {% if not cible_filtre %}pill--active{% endif %}">Tous</a>
+          {% for c in cibles %}
+          <a href="{{ url_for('index', cible=c, marque=marque_filtre, q=recherche) }}"
+             class="pill pill--cible-{{ c | lower | replace('é','e') | replace('è','e') }}
+                    {% if cible_filtre == c %}pill--active{% endif %}">{{ c }}</a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="filtre-row">
+        <span class="filtre-label">Niveau :</span>
+        <div class="filtre-pills">
+          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, q=recherche) }}"
+             class="pill {% if not difficulte_filtre %}pill--active{% endif %}">Tous</a>
+          {% for val, nom in difficultes.items() %}
+          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, difficulte=val, q=recherche) }}"
+             class="pill {% if difficulte_filtre == val|string %}pill--active{% endif %}"
+             title="{{ nom }}">
+            {% for i in range(1, 6) %}<span class="etoile {% if i <= val %}etoile--on{% endif %}">✌</span>{% endfor %}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% if marques %}
+      <div class="filtre-row">
+        <span class="filtre-label">Marque :</span>
+        <div class="filtre-pills">
+          <a href="{{ url_for('index', cible=cible_filtre, q=recherche) }}"
+             class="pill {% if not marque_filtre %}pill--active{% endif %}">Toutes</a>
+          {% for m in marques %}
+          <a href="{{ url_for('index', cible=cible_filtre, marque=m, q=recherche) }}"
+             class="pill {% if marque_filtre == m %}pill--active{% endif %}">{{ m }}</a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+  </form>
+</section>
+
+<script>
+(function() {
+  const section = document.querySelector('.filtres');
+  const btn     = document.getElementById('filtres-toggle');
+  const panel   = document.getElementById('filtres-panel');
+  const chevron = btn.querySelector('.filtres-chevron');
+
+  function setOpen(open) {
+    section.classList.toggle('filtres--open', open);
+    chevron.textContent = open ? '▴' : '▾';
+  }
+
+  // État initial selon la classe posée par Jinja
+  setOpen(section.classList.contains('filtres--open'));
+
+  btn.addEventListener('click', () => setOpen(!section.classList.contains('filtres--open')));
+})();
+</script>
+
+{% if patrons %}
+<section class="grille-patrons" id="patrons-container">
+  {% for patron in patrons %}
+  <article class="carte-patron">
+    <a href="{{ url_for('detail', slug=patron.slug) }}" class="carte-lien">
+
+      <div class="carte-image">
+        {% if patron.image %}
+          <img src="{{ url_for('fichier', slug=patron.slug, filename=patron.image) }}"
+               alt="{{ patron.nom }}" />
+        {% else %}
+          <div class="carte-image-placeholder"><span>✂</span></div>
+        {% endif %}
+      </div>
+
+      <div class="carte-body">
+        <div class="carte-badges">
+          {% if patron.est_famille %}
+            <span class="cible-badge cible-famille">Famille</span>
+          {% else %}
+            <span class="cible-badge cible-{{ patron.cible | lower | replace('é','e') | replace('è','e') }}">
+              {{ patron.cible }}
+            </span>
+          {% endif %}
+          {% if patron.difficulte %}
+            <span class="etoiles" title="niveau : {{ ['','Débutant','Facile','Intermédiaire','Avancé','Expert'][patron.difficulte] }}">
+              {% for i in range(1, 6) %}
+                <span class="etoile {% if i <= patron.difficulte %}etoile--on{% endif %}">✌</span>
+              {% endfor %}
+            </span>
+          {% endif %}
+        </div>
+        <h2 class="carte-nom">{{ patron.nom }}</h2>
+        {% if patron.description %}
+          <p class="carte-desc">{{ patron.description | truncate(70) }}</p>
+        {% endif %}
+        {% if patron.marque %}
+          <span class="carte-domaine">{{ patron.marque }}</span>
+        {% endif %}
+      </div>
+
+    </a>
+
+  </article>
+  {% endfor %}
+</section>
+
+<script>
+(function () {
+  const container = document.getElementById('patrons-container');
+  const btnGrille = document.getElementById('btn-grille');
+  const btnListe  = document.getElementById('btn-liste');
+  const vue = localStorage.getItem('ckp-vue') || 'grille';
+
+  function setVue(v) {
+    container.classList.toggle('liste-patrons', v === 'liste');
+    btnGrille.classList.toggle('active', v === 'grille');
+    btnListe.classList.toggle('active',  v === 'liste');
+    localStorage.setItem('ckp-vue', v);
+  }
+
+  setVue(vue);
+  btnGrille.addEventListener('click', () => setVue('grille'));
+  btnListe.addEventListener('click',  () => setVue('liste'));
+})();
+</script>
+
+{% else %}
+<div class="vide">
+  <span class="vide-icone">✂</span>
+  <p>Aucun patron trouvé.</p>
+  {% if not cible_filtre and not marque_filtre and not recherche %}
+    <p class="vide-hint">Placez vos dossiers de patrons dans le dossier <code>patrons/</code>.</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

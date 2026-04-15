@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}CkiLePatron{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <a href="{{ url_for('index') }}" class="logo">
+        <span class="logo-icon">✂</span>
+        <span class="logo-text">CkiLePatron</span>
+      </a>
+      <nav>
+        <a href="{{ url_for('index') }}" class="nav-link">Patrons</a>
+        <a href="{{ url_for('ajouter') }}" class="btn btn-primary btn-sm">+ Ajouter</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-zone">
+          {% for category, message in messages %}
+            <div class="flash flash--{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <p>CkiLePatron &mdash; Gestion de patrons de couture</p>
+  </footer>
+
+  <div class="decor-couture decor-couture--gauche" aria-hidden="true">
+    <span class="decor-ciseaux">✂</span>
+  </div>
+  <div class="decor-couture decor-couture--droite" aria-hidden="true">
+    <span class="decor-ciseaux">✂</span>
+  </div>
+</body>
+</html>

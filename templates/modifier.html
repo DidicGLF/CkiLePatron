@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Modifier {{ patron.nom }} — CkiLePatron{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <a href="{{ url_for('detail', slug=patron.slug) }}" class="retour-lien">← {{ patron.nom }}</a>
+  <h1>Modifier les infos</h1>
+</section>
+
+<div class="form-container">
+  <form method="post" enctype="multipart/form-data" class="formulaire">
+
+    <div class="champ">
+      <label for="nom">Nom <span class="requis">*</span></label>
+      <input type="text" id="nom" name="nom" required
+             value="{{ patron.nom }}" />
+    </div>
+
+    <div class="champ">
+      <label for="description">Description <span class="champ-hint-inline">(texte sous le titre)</span></label>
+      <input type="text" id="description" name="description"
+             placeholder="la blouse à plis…"
+             value="{{ patron.description }}" />
+    </div>
+
+    <div class="champ">
+      <label for="marque">Marque</label>
+      <input type="text" id="marque" name="marque"
+             placeholder="KLAFOUTIS, LA MAISON VICTOR…"
+             value="{{ patron.marque }}" />
+    </div>
+
+    <div class="champ">
+      <label for="marque_url">Site web de la marque</label>
+      <input type="url" id="marque_url" name="marque_url"
+             placeholder="https://klafoutis.com"
+             value="{{ patron.marque_url }}" />
+    </div>
+
+    <div class="champ">
+      <label>Cible <span class="requis">*</span></label>
+      <div class="radio-group">
+        {% for c in cibles %}
+        <label class="radio-pill">
+          <input type="radio" name="cible" value="{{ c }}" required
+                 {% if patron.cible == c %}checked{% endif %} />
+          <span>{{ c }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="champ">
+      <label>Difficulté</label>
+      <div class="star-picker" id="diff-picker">
+        {% for i in [5, 4, 3, 2, 1] %}
+        <input type="radio" name="difficulte" id="dm{{ i }}" value="{{ i }}"
+               {% if patron.difficulte == i %}checked{% endif %} />
+        <label for="dm{{ i }}" title="{{ ['','Débutant','Facile','Intermédiaire','Avancé','Expert'][i] }}">✌</label>
+        {% endfor %}
+        <input type="radio" name="difficulte" id="dm0" value="0"
+               {% if not patron.difficulte %}checked{% endif %} />
+        <label for="dm0" class="star-reset" title="Effacer">✕</label>
+      </div>
+    </div>
+
+    <div class="champ">
+      <label for="url">Lien internet du patron</label>
+      <input type="url" id="url" name="url"
+             placeholder="https://…"
+             value="{{ patron.url }}" />
+    </div>
+
+    <div class="champ">
+      <label for="image">Remplacer l'image de couverture</label>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="image" name="image" accept="image/*" class="upload-input" />
+        <div class="upload-inner">
+          {% if patron.image %}
+            <span class="upload-icone">🖼</span>
+            <p>Image actuelle : <strong>{{ patron.image }}</strong></p>
+            <p class="upload-hint">Sélectionnez un nouveau fichier pour la remplacer</p>
+          {% else %}
+            <span class="upload-icone">🖼</span>
+            <p>Glissez une image ici ou <strong>cliquez pour parcourir</strong></p>
+            <p class="upload-hint">PNG, JPG, WebP</p>
+          {% endif %}
+        </div>
+        <div class="upload-preview" id="upload-preview" style="display:none;">
+          <img id="preview-img" src="" alt="Aperçu" />
+          <button type="button" id="suppr-preview" class="btn btn-sm btn-danger">Retirer</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="champ">
+      <label for="notes">Notes</label>
+      <textarea id="notes" name="notes" rows="4"
+                placeholder="Tailles disponibles, tissu recommandé, difficulté…">{{ patron.notes }}</textarea>
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ url_for('detail', slug=patron.slug) }}" class="btn btn-secondary">Annuler</a>
+      <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </div>
+
+  </form>
+</div>
+
+<script>
+  const input    = document.getElementById('image');
+  const zone     = document.getElementById('upload-zone');
+  const previewBox = document.getElementById('upload-preview');
+  const previewImg = document.getElementById('preview-img');
+  const suppBtn  = document.getElementById('suppr-preview');
+  const inner    = zone.querySelector('.upload-inner');
+
+  input.addEventListener('change', () => {
+    const file = input.files[0];
+    if (file) {
+      previewImg.src = URL.createObjectURL(file);
+      previewBox.style.display = 'flex';
+      inner.style.display = 'none';
+    }
+  });
+
+  suppBtn.addEventListener('click', () => {
+    input.value = '';
+    previewBox.style.display = 'none';
+    inner.style.display = 'flex';
+  });
+</script>
+{% endblock %}

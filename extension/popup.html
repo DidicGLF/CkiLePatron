@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+<header>
+  <span>🧵</span>
+  <h1>CkiLePatron</h1>
+</header>
+
+<div id="page-erreur" style="display:none">
+  <strong>Page non reconnue</strong><br>
+  Ouvrez une page produit sur<br>klafoutis.com pour utiliser cette extension.
+</div>
+
+<div id="page-patron" style="display:none">
+
+  <section>
+    <div class="field">
+      <label>Nom</label>
+      <input type="text" id="f-nom">
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <input type="text" id="f-description">
+    </div>
+    <div class="field">
+      <label>Marque</label>
+      <input type="text" id="f-marque">
+    </div>
+    <div class="field">
+      <label>Cible</label>
+      <input type="text" id="f-cible">
+    </div>
+    <div class="field">
+      <label>Difficulté</label>
+      <div class="stars" id="stars">
+        <span class="star" data-v="1">★</span>
+        <span class="star" data-v="2">★</span>
+        <span class="star" data-v="3">★</span>
+        <span class="star" data-v="4">★</span>
+        <span class="star" data-v="5">★</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="field">
+      <label>Image de couverture</label>
+      <div id="apercu"><span>Aucune image sélectionnée</span></div>
+      <div class="image-grid" id="image-grid"></div>
+    </div>
+  </section>
+
+  <footer>
+    <button id="btn-ajouter">Ajouter à CkiLePatron</button>
+    <div id="status"></div>
+  </footer>
+
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
