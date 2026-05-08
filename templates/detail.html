@@ -128,11 +128,11 @@
               {% endif %}
               {% if f.get('a4') %}
                 <a href="{{ url_for('fichier', slug=patron.slug, filename=f.a4) }}"
-                   class="btn btn-fichier" target="_blank">📄 Patron A4</a>
+                   class="btn btn-fichier" target="_blank">📄 A4</a>
               {% endif %}
               {% if f.get('imprimeur') %}
                 <a href="{{ url_for('fichier', slug=patron.slug, filename=f.imprimeur) }}"
-                   class="btn btn-fichier" target="_blank">🖨 Grand format</a>
+                   class="btn btn-fichier" target="_blank">🖨 Imprimeur</a>
               {% endif %}
             </div>
           {% endfor %}
