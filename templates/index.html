@@ -1,180 +1,138 @@
 {% extends "base.html" %}
-{% block title %}Patrons — CkiLePatron{% endblock %}
+{% from "_macros.html" import svg_search, svg_sliders, svg_grid, svg_list, svg_scissors, svg_book, cover, cible_badge, spools, marque_badge %}
+
+{% block title %}Mes patrons — CkiLePatron{% endblock %}
 
 {% block content %}
-<section class="page-header">
-  <div>
-    <h1>Mes patrons</h1>
-    <p class="subtitle">
-      {{ patrons|length }}
-      {% if patrons|length != total %} sur {{ total }} {% endif %}
-      patron{% if total != 1 %}s{% endif %}
-    </p>
-  </div>
-  <div class="vue-toggle" id="vue-toggle">
-    <button class="vue-btn vue-btn--grille active" id="btn-grille" title="Vue grille">⊞</button>
-    <button class="vue-btn vue-btn--liste" id="btn-liste" title="Vue liste">≡</button>
-  </div>
-</section>
+<div class="shell">
 
-{% set filtres_actifs = (cible_filtre or marque_filtre or difficulte_filtre) %}
-{% set nb_filtres = [cible_filtre, marque_filtre, difficulte_filtre] | select | list | length %}
+  <section class="page-head">
+    <div>
+      <h1 class="page-head__title">Mes <em>patrons</em></h1>
+      <p class="page-head__sub">L'atelier — votre tiroir à enveloppes en papier</p>
+    </div>
+  </section>
 
-<section class="filtres{% if filtres_actifs %} filtres--open{% endif %}">
-  <form method="get" action="{{ url_for('index') }}">
+  {% set filtres_actifs = (cible_filtre or marque_filtre or difficulte_filtre or tutoriel_filtre) %}
+  {% set nb_filtres = [cible_filtre, marque_filtre, difficulte_filtre, tutoriel_filtre] | select | list | length %}
 
-    <div class="filtres-barre">
-      <input type="text" name="q" placeholder="Rechercher un patron…"
-             value="{{ recherche }}" class="input-recherche" />
-      <button type="button" class="filtres-toggle" id="filtres-toggle">
-        Filtres{% if nb_filtres %} <span class="filtres-count">{{ nb_filtres }}</span>{% endif %}
-        <span class="filtres-chevron">▾</span>
+  <form method="get" class="filters {% if filtres_actifs %}is-open{% endif %}" id="filters" data-filters>
+    <div class="filters__bar">
+      <span style="color:var(--muted-2); display:inline-flex;">{{ svg_search() }}</span>
+      <input class="search-input" type="text" name="q" id="search-input"
+             placeholder="Chercher un patron, une marque, une cible…"
+             value="{{ recherche }}" />
+      <button type="button" class="filter-toggle {% if filtres_actifs %}is-on{% endif %}" data-filter-toggle>
+        {{ svg_sliders() }}<span>Filtres</span>
+        {% if nb_filtres %}<span class="filter-count">{{ nb_filtres }}</span>{% endif %}
       </button>
-      {% if filtres_actifs %}
-        <a href="{{ url_for('index', q=recherche) }}" class="filtres-reset" title="Effacer les filtres">✕</a>
-      {% endif %}
+      <div class="view-toggle">
+        <button type="button" id="view-grid" class="is-on" title="Vue grille">{{ svg_grid() }}</button>
+        <button type="button" id="view-list" title="Vue liste">{{ svg_list() }}</button>
+      </div>
     </div>
 
-    <div class="filtres-panel" id="filtres-panel">
-      <div class="filtre-row">
-        <span class="filtre-label">Cible :</span>
-        <div class="filtre-pills">
-          <a href="{{ url_for('index', marque=marque_filtre, q=recherche) }}"
-             class="pill {% if not cible_filtre %}pill--active{% endif %}">Tous</a>
+    <div class="filters__panel">
+      {# Cible #}
+      <div class="filter-row">
+        <span class="filter-row__label">Cible</span>
+        <div class="filter-pills">
+          <a href="{{ url_for('index', marque=marque_filtre, tutoriel=tutoriel_filtre, q=recherche) }}"
+             class="chip {% if not cible_filtre %}is-on{% endif %}">Tous</a>
           {% for c in cibles %}
-          <a href="{{ url_for('index', cible=c, marque=marque_filtre, q=recherche) }}"
-             class="pill pill--cible-{{ c | lower | replace('é','e') | replace('è','e') }}
-                    {% if cible_filtre == c %}pill--active{% endif %}">{{ c }}</a>
+          <a href="{{ url_for('index', cible=c, marque=marque_filtre, tutoriel=tutoriel_filtre, q=recherche) }}"
+             class="chip {% if cible_filtre == c %}is-on{% endif %}">{{ c }}</a>
           {% endfor %}
         </div>
       </div>
 
-      <div class="filtre-row">
-        <span class="filtre-label">Niveau :</span>
-        <div class="filtre-pills">
-          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, q=recherche) }}"
-             class="pill {% if not difficulte_filtre %}pill--active{% endif %}">Tous</a>
+      {# Niveau #}
+      <div class="filter-row">
+        <span class="filter-row__label">Niveau</span>
+        <div class="filter-pills">
+          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, tutoriel=tutoriel_filtre, q=recherche) }}"
+             class="chip {% if not difficulte_filtre %}is-on{% endif %}">Tous</a>
           {% for val, nom in difficultes.items() %}
-          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, difficulte=val, q=recherche) }}"
-             class="pill {% if difficulte_filtre == val|string %}pill--active{% endif %}"
-             title="{{ nom }}">
-            {% for i in range(1, 6) %}<span class="etoile {% if i <= val %}etoile--on{% endif %}">✌</span>{% endfor %}
-          </a>
+          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, difficulte=val, tutoriel=tutoriel_filtre, q=recherche) }}"
+             class="chip chip-difficulty {% if difficulte_filtre == val|string %}is-on{% endif %}"
+             title="{{ nom }}">{{ spools(val) }}</a>
           {% endfor %}
         </div>
       </div>
 
+      {# Marque #}
       {% if marques %}
-      <div class="filtre-row">
-        <span class="filtre-label">Marque :</span>
-        <div class="filtre-pills">
-          <a href="{{ url_for('index', cible=cible_filtre, q=recherche) }}"
-             class="pill {% if not marque_filtre %}pill--active{% endif %}">Toutes</a>
+      <div class="filter-row">
+        <span class="filter-row__label">Marque</span>
+        <div class="filter-pills">
+          <a href="{{ url_for('index', cible=cible_filtre, tutoriel=tutoriel_filtre, q=recherche) }}"
+             class="chip {% if not marque_filtre %}is-on{% endif %}">Toutes</a>
           {% for m in marques %}
-          <a href="{{ url_for('index', cible=cible_filtre, marque=m, q=recherche) }}"
-             class="pill {% if marque_filtre == m %}pill--active{% endif %}">{{ m }}</a>
+          <a href="{{ url_for('index', cible=cible_filtre, marque=m, tutoriel=tutoriel_filtre, q=recherche) }}"
+             class="chip {% if marque_filtre == m %}is-on{% endif %}">{{ m }}</a>
           {% endfor %}
         </div>
       </div>
       {% endif %}
-    </div>
 
-  </form>
-</section>
-
-<script>
-(function() {
-  const section = document.querySelector('.filtres');
-  const btn     = document.getElementById('filtres-toggle');
-  const panel   = document.getElementById('filtres-panel');
-  const chevron = btn.querySelector('.filtres-chevron');
-
-  function setOpen(open) {
-    section.classList.toggle('filtres--open', open);
-    chevron.textContent = open ? '▴' : '▾';
-  }
-
-  // État initial selon la classe posée par Jinja
-  setOpen(section.classList.contains('filtres--open'));
-
-  btn.addEventListener('click', () => setOpen(!section.classList.contains('filtres--open')));
-})();
-</script>
-
-{% if patrons %}
-<section class="grille-patrons" id="patrons-container">
-  {% for patron in patrons %}
-  <article class="carte-patron">
-    <a href="{{ url_for('detail', slug=patron.slug) }}" class="carte-lien">
-
-      <div class="carte-image">
-        {% if patron.image %}
-          <img src="{{ url_for('fichier', slug=patron.slug, filename=patron.image) }}"
-               alt="{{ patron.nom }}" />
-        {% else %}
-          <div class="carte-image-placeholder"><span>✂</span></div>
-        {% endif %}
-      </div>
-
-      <div class="carte-body">
-        <div class="carte-badges">
-          {% if patron.est_famille %}
-            <span class="cible-badge cible-famille">Famille</span>
-          {% else %}
-            <span class="cible-badge cible-{{ patron.cible | lower | replace('é','e') | replace('è','e') }}">
-              {{ patron.cible }}
-            </span>
-          {% endif %}
-          {% if patron.difficulte %}
-            <span class="etoiles" title="niveau : {{ ['','Débutant','Facile','Intermédiaire','Avancé','Expert'][patron.difficulte] }}">
-              {% for i in range(1, 6) %}
-                <span class="etoile {% if i <= patron.difficulte %}etoile--on{% endif %}">✌</span>
-              {% endfor %}
-            </span>
-          {% endif %}
+      {# Tutoriel #}
+      <div class="filter-row">
+        <span class="filter-row__label">Tutoriel</span>
+        <div class="filter-pills">
+          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, difficulte=difficulte_filtre, q=recherche) }}"
+             class="chip {% if not tutoriel_filtre %}is-on{% endif %}">Tous</a>
+          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, difficulte=difficulte_filtre, tutoriel='1', q=recherche) }}"
+             class="chip {% if tutoriel_filtre %}is-on{% endif %}">{{ svg_book() }} Avec tutoriel</a>
         </div>
-        <h2 class="carte-nom">{{ patron.nom }}</h2>
-        {% if patron.description %}
-          <p class="carte-desc">{{ patron.description | truncate(70) }}</p>
-        {% endif %}
-        {% if patron.marque %}
-          <span class="carte-domaine">{{ patron.marque }}</span>
+      </div>
+    </div>
+  </form>
+
+  {# GRID #}
+  {% if patrons %}
+  <section id="grid" class="grid grid--magazine">
+    {% for p in patrons %}
+    {% set num = '%02d' % (loop.index) %}
+    {% set cibles_p = ['Famille'] if p.est_famille else [p.cible] %}
+    <a class="card" href="{{ url_for('detail', slug=p.slug) }}">
+      <div class="card__cover">
+        {{ cover(p) }}
+        {% if p.tutoriel %}<span class="card__tuto">{{ svg_book() }}</span>{% endif %}
+      </div>
+      <div class="card__body">
+        <div class="card__row">
+          <div style="display:flex; gap:4px; flex-wrap:wrap;">
+            {% for c in cibles_p %}{{ cible_badge(c, 'sm') }}{% endfor %}
+          </div>
+          {% if p.difficulte %}{{ spools(p.difficulte) }}{% endif %}
+        </div>
+        <div class="card__main">
+          <h3 class="card__name">{{ p.nom }}</h3>
+          {% if p.description %}<p class="card__desc">{{ p.description|truncate(100) }}</p>{% endif %}
+        </div>
+        {% if p.tutoriel %}<span class="card__tuto card__tuto--inline">{{ svg_book() }}<span>Tutoriel</span></span>{% endif %}
+        {% if p.marque %}
+          <div class="card__meta">
+            <span class="card__marque">{{ p.marque }}</span>
+            <span class="card__marque" style="opacity:.6">N° {{ num }}</span>
+          </div>
         {% endif %}
       </div>
-
     </a>
-
-  </article>
-  {% endfor %}
-</section>
-
-<script>
-(function () {
-  const container = document.getElementById('patrons-container');
-  const btnGrille = document.getElementById('btn-grille');
-  const btnListe  = document.getElementById('btn-liste');
-  const vue = localStorage.getItem('ckp-vue') || 'grille';
-
-  function setVue(v) {
-    container.classList.toggle('liste-patrons', v === 'liste');
-    btnGrille.classList.toggle('active', v === 'grille');
-    btnListe.classList.toggle('active',  v === 'liste');
-    localStorage.setItem('ckp-vue', v);
-  }
-
-  setVue(vue);
-  btnGrille.addEventListener('click', () => setVue('grille'));
-  btnListe.addEventListener('click',  () => setVue('liste'));
-})();
-</script>
-
-{% else %}
-<div class="vide">
-  <span class="vide-icone">✂</span>
-  <p>Aucun patron trouvé.</p>
-  {% if not cible_filtre and not marque_filtre and not recherche %}
-    <p class="vide-hint">Placez vos dossiers de patrons dans le dossier <code>patrons/</code>.</p>
+    {% endfor %}
+  </section>
+  {% else %}
+  <div class="empty">
+    <span class="empty__icon">{{ svg_scissors() }}</span>
+    <p>Aucun patron ne correspond à votre recherche.</p>
+    {% if not filtres_actifs and not recherche %}
+    <p class="empty__hint">Placez vos dossiers de patrons dans le dossier <code>patrons/</code>.</p>
+    {% endif %}
+  </div>
   {% endif %}
 </div>
-{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
 {% endblock %}

@@ -1,170 +1,109 @@
 {% extends "base.html" %}
+{% from "_macros.html" import svg_arrow_left, svg_pencil, svg_trash, svg_file, svg_print, svg_project, svg_book, svg_link, cover, cible_badge, spools %}
+
 {% block title %}{{ patron.nom }} — CkiLePatron{% endblock %}
 
 {% block content %}
-<div class="detail-page">
+<div class="shell shell--wide">
 
-  <div class="detail-header">
-    <a href="{{ url_for('index') }}" class="retour-lien">← Tous les patrons</a>
-    <div class="detail-header-actions">
-      {% if patron.marque %}
-        {% if patron.marque_url %}
-          <a href="{{ patron.marque_url }}" target="_blank" rel="noopener"
-             class="carte-domaine carte-domaine--header carte-domaine--link">{{ patron.marque }}</a>
-        {% else %}
-          <span class="carte-domaine carte-domaine--header">{{ patron.marque }}</span>
-        {% endif %}
-      {% endif %}
-      <a href="{{ url_for('modifier', slug=patron.slug) }}" class="btn btn-secondary btn-sm">✎ Modifier</a>
-      <form method="post" action="{{ url_for('supprimer', slug=patron.slug) }}"
-            onsubmit="return confirm('Supprimer « {{ patron.nom }} » et tous ses fichiers ?')">
-        <button type="submit" class="btn btn-danger btn-sm">✕ Supprimer</button>
-      </form>
-    </div>
-  </div>
+  <a href="{{ url_for('index') }}" class="detail__back">{{ svg_arrow_left() }}<span>Tous les patrons</span></a>
 
-  <div class="detail-corps">
+  {% set num = '%02d' % 1 %}
+  {% set cibles_p = ['Famille'] if patron.est_famille else [patron.cible] %}
+  {% set niveau = difficultes[patron.difficulte] if patron.difficulte and difficultes else None %}
 
-    <!-- Image -->
-    <div class="detail-image-col">
-      {% if patron.image %}
-        <img src="{{ url_for('fichier', slug=patron.slug, filename=patron.image) }}"
-             alt="{{ patron.nom }}" class="detail-image" />
-      {% else %}
-        <div class="detail-image-vide">
-          <span>✂</span>
-          <p>Pas d'image</p>
+  <div class="detail">
+    <div class="detail__cover-col">
+      <div class="detail__cover">{{ cover(patron) }}</div>
+      <div class="detail__cover-tag">
+        <div style="display:flex;gap:10px;align-items:center;">
+          {% if patron.marque %}
+            {% if patron.marque_url %}
+              <a href="{{ patron.marque_url }}" target="_blank" rel="noopener" class="detail__cover-meta detail__cover-meta--plain">{{ patron.marque }}</a>
+            {% else %}
+              <span class="detail__cover-meta detail__cover-meta--plain">{{ patron.marque }}</span>
+            {% endif %}
+          {% endif %}
+          <span class="detail__cover-meta">{{ cibles_p|join(' · ') }}</span>
         </div>
-      {% endif %}
+        {% if patron.tutoriel %}<span class="detail__cover-meta">Tutoriel inclus</span>{% endif %}
+      </div>
     </div>
 
-    <!-- Infos + fichiers -->
-    <div class="detail-info-col">
+    <div class="detail__info-col">
+      <div class="detail__top">
+        <div style="display:flex; gap:8px;">
+          <a href="{{ url_for('modifier', slug=patron.slug) }}" class="btn btn--soft btn--sm">{{ svg_pencil() }}<span>Modifier</span></a>
+          <form method="post" action="{{ url_for('supprimer', slug=patron.slug) }}" style="display:inline" onsubmit="return confirm('Supprimer ce patron ?');">
+            <button type="submit" class="btn btn--danger btn--sm">{{ svg_trash() }}<span>Supprimer</span></button>
+          </form>
+        </div>
+      </div>
 
-      <div class="detail-badges">
-        {% if patron.est_famille %}
-          <span class="cible-badge cible-famille cible-lg">Famille</span>
-          {% for c in patron.cibles_dispo %}
-            <span class="cible-badge cible-{{ c | lower | replace('é','e') }} cible-sm">{{ c }}</span>
-          {% endfor %}
-        {% else %}
-          <span class="cible-badge cible-{{ patron.cible | lower | replace('é','e') | replace('è','e') }} cible-lg">
-            {{ patron.cible }}
-          </span>
+      <div class="detail__badges">
+        {% for c in cibles_p %}{{ cible_badge(c, 'lg') }}{% endfor %}
+      </div>
+
+      <h1 class="detail__name">{{ patron.nom }}</h1>
+      {% if patron.description %}<p class="detail__desc">{{ patron.description }}</p>{% endif %}
+
+      {% if patron.difficulte or patron.url %}
+      <div class="detail__diff">
+        {% if patron.difficulte %}
+        <div class="detail__diff-row">
+          <span class="detail__diff-label">Niveau</span>
+          {{ spools(patron.difficulte, 'lg') }}
+        </div>
+        {% endif %}
+        {% if patron.url %}
+        <div class="detail__diff-row">
+          <span class="detail__diff-label">Page d'origine</span>
+          <a href="{{ patron.url }}" target="_blank" rel="noopener" class="detail__diff-link">{{ svg_link() }}<span>Voir</span></a>
+        </div>
         {% endif %}
       </div>
-
-      <h1 class="detail-nom">{{ patron.nom }}</h1>
-      {% if patron.description %}
-        <p class="detail-description">{{ patron.description }}</p>
-      {% endif %}
-
-      <div class="detail-difficulte">
-        <form class="diff-inline" data-url="{{ url_for('set_difficulte', slug=patron.slug) }}">
-          <div class="star-picker star-picker--lg">
-            {% for i in [5, 4, 3, 2, 1] %}
-            <input type="radio" name="difficulte" id="dd{{ i }}" value="{{ i }}"
-                   {% if patron.difficulte == i %}checked{% endif %} />
-            <label for="dd{{ i }}"
-                   title="{{ ['','Débutant','Facile','Intermédiaire','Avancé','Expert'][i] }}">✌</label>
-            {% endfor %}
-            <input type="radio" name="difficulte" id="dd0" value="0"
-                   {% if not patron.difficulte %}checked{% endif %} />
-            <label for="dd0" class="star-reset" title="Effacer">✕</label>
-          </div>
-        </form>
-        <span class="diff-label-texte" id="diff-detail-label">
-          {% if patron.difficulte %}niveau : {{ ['','Débutant','Facile','Intermédiaire','Avancé','Expert'][patron.difficulte] }}{% endif %}
-        </span>
-      </div>
-
-      {% if patron.url %}
-        <a href="{{ patron.url }}" target="_blank" rel="noopener" class="detail-url">
-          🔗 Voir le produit sur le site
-        </a>
       {% endif %}
 
       {% if patron.notes %}
-        <div class="detail-notes">
-          <h2>Notes</h2>
-          <p>{{ patron.notes }}</p>
-        </div>
+      <div class="notes-card">
+        <span class="notes-card__label">Notes</span>
+        <p>{{ patron.notes }}</p>
+      </div>
       {% endif %}
 
-      <!-- ─── Fichiers par cible ─── -->
-      <div class="fichiers-section">
+      <div class="fichiers">
+        <div class="fichiers__head">
+          <h2 class="fichiers__title">Fichiers</h2>
+          {% if patron.tutoriel %}
+          <a href="{{ url_for('fichier', slug=patron.slug, filename=patron.tutoriel) }}" target="_blank" class="btn btn--terra btn--sm">{{ svg_book() }}<span>Tutoriel</span></a>
+          {% endif %}
+        </div>
 
-        {% if patron.est_famille %}
-          {% for cible in patron.cibles_dispo %}
-            <div class="fichiers-groupe">
-              <h3 class="fichiers-groupe-titre">
-                <span class="cible-badge cible-{{ cible | lower | replace('é','e') }}">{{ cible }}</span>
-              </h3>
-              <div class="fichiers-liste">
-                {% set f = patron.fichiers[cible] %}
-                {% if f.get('projecteur') %}
-                  <a href="{{ url_for('projeter', slug=patron.slug, cible=cible) }}"
-                     class="btn btn-projection" target="_blank">⊞ Projeter</a>
-                {% endif %}
-                {% if f.get('a4') %}
-                  <a href="{{ url_for('fichier', slug=patron.slug, filename=f.a4) }}"
-                     class="btn btn-fichier" target="_blank">📄 A4</a>
-                {% endif %}
-                {% if f.get('imprimeur') %}
-                  <a href="{{ url_for('fichier', slug=patron.slug, filename=f.imprimeur) }}"
-                     class="btn btn-fichier" target="_blank">🖨 Imprimeur</a>
-                {% endif %}
-              </div>
+        {% if patron.fichiers %}
+          {% for cible_label, files in patron.fichiers.items() %}
+          <div class="fichiers__group">
+            <div class="fichiers__group-head">
+              {% if cible_label != 'default' %}{{ cible_badge(cible_label) }}{% else %}<span class="cible">Tous</span>{% endif %}
+              <span class="uppercase-mark" style="margin-left:auto">{{ files|length }} format{{ 's' if files|length > 1 else '' }}</span>
             </div>
-          {% endfor %}
-
-        {% else %}
-          {% for cible in patron.cibles_dispo %}
-            {% set f = patron.fichiers[cible] %}
-            <div class="fichiers-liste fichiers-liste--solo">
-              {% if f.get('projecteur') %}
-                <a href="{{ url_for('projeter', slug=patron.slug, cible=cible) }}"
-                   class="btn btn-projection" target="_blank">⊞ Projeter</a>
+            <div class="fichiers__btns">
+              {% if files.projecteur %}
+                <a class="btn btn--proj btn--sm" href="{{ url_for('projeter', slug=patron.slug, cible=cible_label) }}" target="_blank">{{ svg_project() }}<span>Projeter</span></a>
               {% endif %}
-              {% if f.get('a4') %}
-                <a href="{{ url_for('fichier', slug=patron.slug, filename=f.a4) }}"
-                   class="btn btn-fichier" target="_blank">📄 A4</a>
+              {% if files.a4 %}
+                <a class="btn btn--file btn--sm" href="{{ url_for('fichier', slug=patron.slug, filename=files.a4) }}" target="_blank">{{ svg_file() }}<span>A4</span></a>
               {% endif %}
-              {% if f.get('imprimeur') %}
-                <a href="{{ url_for('fichier', slug=patron.slug, filename=f.imprimeur) }}"
-                   class="btn btn-fichier" target="_blank">🖨 Imprimeur</a>
+              {% if files.imprimeur %}
+                <a class="btn btn--file btn--sm" href="{{ url_for('fichier', slug=patron.slug, filename=files.imprimeur) }}" target="_blank">{{ svg_print() }}<span>Imprimeur</span></a>
               {% endif %}
             </div>
-          {% endfor %}
-        {% endif %}
-
-        {% if patron.tutoriel %}
-          <div class="fichiers-tutoriel">
-            <a href="{{ url_for('fichier', slug=patron.slug, filename=patron.tutoriel) }}"
-               class="btn btn-tutoriel" target="_blank">📖 Tutoriel</a>
           </div>
+          {% endfor %}
+        {% else %}
+          <p class="empty__hint" style="padding:14px 16px;">Aucun fichier PDF n'a encore été déposé dans le dossier de ce patron.</p>
         {% endif %}
-
-      </div><!-- /fichiers-section -->
-    </div><!-- /detail-info-col -->
-  </div><!-- /detail-corps -->
+      </div>
+    </div>
+  </div>
 </div>
-
-<script>
-const NIVEAUX = ['', 'Débutant', 'Facile', 'Intermédiaire', 'Avancé', 'Expert'];
-const form    = document.querySelector('.diff-inline');
-const label   = document.getElementById('diff-detail-label');
-
-form.querySelectorAll('input[name="difficulte"]').forEach(r => {
-  r.addEventListener('change', () => {
-    const val = parseInt(r.value);
-    label.textContent = val ? 'niveau : ' + NIVEAUX[val] : '';
-    fetch(form.dataset.url, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: 'difficulte=' + val
-    });
-  });
-});
-</script>
 {% endblock %}

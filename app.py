@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import json
 import shutil
 import unicodedata
@@ -8,7 +9,16 @@ from pathlib import Path
 from flask import (Flask, render_template, request, redirect,
                    send_from_directory, abort, url_for, flash, jsonify)
 
-BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
+# Quand l'app est bundlée par PyInstaller :
+#   sys._MEIPASS  → dossier temporaire contenant templates/ et static/
+#   sys.executable → chemin du .exe, donc dossier de l'exe = dossier de travail
+if getattr(sys, 'frozen', False):
+    BASE_DIR   = os.path.dirname(sys.executable)
+    BUNDLE_DIR = sys._MEIPASS
+else:
+    BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
+    BUNDLE_DIR = BASE_DIR
+
 PATRONS_DIR = os.path.join(BASE_DIR, "patrons")
 
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
@@ -221,10 +231,11 @@ def find_patron_by_slug(slug: str) -> dict | None:
                 return scan_patron_folder(fp, entry)
     return None
 
-
 # ── Application Flask ──────────────────────────────────────────────────────
 
-app = Flask(__name__)
+app = Flask(__name__,
+            template_folder=os.path.join(BUNDLE_DIR, 'templates'),
+            static_folder=os.path.join(BUNDLE_DIR, 'static'))
 app.config['SECRET_KEY'] = 'ckilepatron-secret'
 app.config['PATRONS_DIR'] = PATRONS_DIR
 
@@ -237,6 +248,7 @@ def index():
     cible_filtre      = request.args.get('cible', '')
     marque_filtre     = request.args.get('marque', '')
     difficulte_filtre = request.args.get('difficulte', '')
+    tutoriel_filtre   = request.args.get('tutoriel', '')
     recherche         = request.args.get('q', '').strip()
 
     patrons = tous
@@ -257,6 +269,10 @@ def index():
     if difficulte_filtre and difficulte_filtre.isdigit():
         patrons = [p for p in patrons if p['difficulte'] == int(difficulte_filtre)]
 
+    # Filtre tutoriel
+    if tutoriel_filtre:
+        patrons = [p for p in patrons if p['tutoriel']]
+
     # Recherche texte
     if recherche:
         rl = recherche.lower()
@@ -274,8 +290,9 @@ def index():
                            cible_filtre=cible_filtre,
                            marque_filtre=marque_filtre,
                            difficulte_filtre=difficulte_filtre,
+                           tutoriel_filtre=tutoriel_filtre,
                            recherche=recherche)
-
+                           
 
 @app.route('/patron/<slug>')
 def detail(slug):

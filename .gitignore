@@ -1,14 +1,35 @@
-# Ignorer un fichier précis
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
 
+# PyInstaller
+build/
+dist/
 
-# Ignorer un dossier entier
-patrons/
-.env
+# Distribution
+CkiLePatron-distribution.zip
 
-# Ignorer tous les fichiers d'un type
-# *.log
-# *.zip
+# Données utilisateur
+patrons/*
+!patrons/.gitkeep
+patrons.db
+static/uploads/
 
-# Ignorer partout sauf un fichier spécifique
-# *.env
-# !.env.example
+# Fichiers de migration (obsolètes)
+INSTALLATION.md
+app_patch.py
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp

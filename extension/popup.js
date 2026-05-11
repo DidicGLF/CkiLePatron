@@ -53,13 +53,13 @@ function renderForm(data) {
 
 function setDifficulte(val) {
   currentDifficulte = val;
-  document.querySelectorAll('.star').forEach(s => {
-    s.classList.toggle('on', parseInt(s.dataset.v, 10) <= val);
+  document.querySelectorAll('.spool').forEach(s => {
+    s.classList.toggle('is-on', parseInt(s.dataset.v, 10) <= val);
   });
 }
 
-document.querySelectorAll('.star').forEach(star => {
-  star.addEventListener('click', () => setDifficulte(parseInt(star.dataset.v, 10)));
+document.querySelectorAll('.spool').forEach(spool => {
+  spool.addEventListener('click', () => setDifficulte(parseInt(spool.dataset.v, 10)));
 });
 
 // ── Grille d'images ───────────────────────────────────────────────────────────

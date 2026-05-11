@@ -1,118 +1,104 @@
 {% extends "base.html" %}
+{% from "_macros.html" import svg_arrow_left, svg_image, spools, spool %}
+
 {% block title %}Ajouter un patron — CkiLePatron{% endblock %}
 
 {% block content %}
-<section class="page-header">
-  <div>
-    <h1>Ajouter un patron</h1>
-  </div>
-</section>
+<div class="shell shell--narrow">
 
-<div class="form-container">
-  <form method="post" enctype="multipart/form-data" class="formulaire">
+  <a href="{{ url_for('index') }}" class="detail__back">{{ svg_arrow_left() }}<span>Retour</span></a>
 
-    <div class="champ">
-      <label for="nom">Nom <span class="requis">*</span></label>
-      <input type="text" id="nom" name="nom" placeholder="Ex : CERISE, KAKI…"
-             required autofocus />
+  <section class="page-head">
+    <div>
+      <h1 class="page-head__title">Ajouter un <em>patron</em></h1>
+      <p class="page-head__sub">Une nouvelle enveloppe dans votre tiroir</p>
     </div>
+  </section>
 
-    <div class="champ">
-      <label for="description">Description <span class="champ-hint-inline">(texte sous le titre)</span></label>
-      <input type="text" id="description" name="description"
-             placeholder="la blouse à plis, le pantalon chino…" />
-    </div>
+  <form method="post" enctype="multipart/form-data" class="form-paper" action="{{ url_for('ajouter') }}">
 
-    <div class="champ">
-      <label for="marque">Marque</label>
-      <input type="text" id="marque" name="marque" placeholder="KLAFOUTIS, LA MAISON VICTOR…" />
-    </div>
+    <div class="form-section">
+      <h2 class="form-section__title">Identité</h2>
 
-    <div class="champ">
-      <label for="marque_url">Site web de la marque</label>
-      <input type="url" id="marque_url" name="marque_url" placeholder="https://klafoutis.com" />
-    </div>
+      <div class="form-row">
+        <label for="nom">Nom du patron <span class="form-required">*</span></label>
+        <input type="text" id="nom" name="nom" placeholder="CERISE, AMANDE…" required />
+      </div>
 
-    <div class="champ">
-      <label>Cible <span class="requis">*</span></label>
-      <div class="radio-group">
-        {% for c in cibles %}
-        <label class="radio-pill">
-          <input type="radio" name="cible" value="{{ c }}" required />
-          <span>{{ c }}</span>
-        </label>
-        {% endfor %}
+      <div class="form-row">
+        <label for="description">Description</label>
+        <input type="text" id="description" name="description" placeholder="la blouse à plis, manches ballons…" />
       </div>
     </div>
 
-    <div class="champ">
-      <label>Difficulté</label>
-      <div class="star-picker" id="diff-picker">
-        {% for i in [5, 4, 3, 2, 1] %}
-        <input type="radio" name="difficulte" id="da{{ i }}" value="{{ i }}" />
-        <label for="da{{ i }}" title="{{ ['','Débutant','Facile','Intermédiaire','Avancé','Expert'][i] }}">✌</label>
-        {% endfor %}
-        <input type="radio" name="difficulte" id="da0" value="0" checked />
-        <label for="da0" class="star-reset" title="Effacer">✕</label>
-      </div>
-    </div>
+    <div class="form-section">
+      <h2 class="form-section__title">Maison &amp; cible</h2>
 
-    <div class="champ">
-      <label for="url">Lien internet du patron</label>
-      <input type="url" id="url" name="url" placeholder="https://…" />
-    </div>
-
-    <div class="champ">
-      <label for="image">Image de couverture</label>
-      <div class="upload-zone" id="upload-zone">
-        <input type="file" id="image" name="image" accept="image/*" class="upload-input" />
-        <div class="upload-inner">
-          <span class="upload-icone">🖼</span>
-          <p>Glissez une image ici ou <strong>cliquez pour parcourir</strong></p>
-          <p class="upload-hint">PNG, JPG, WebP</p>
+      <div class="form-row form-row--grid-2">
+        <div>
+          <label for="marque">Marque</label>
+          <input type="text" id="marque" name="marque" placeholder="KLAFOUTIS, LA MAISON VICTOR…" />
         </div>
-        <div class="upload-preview" id="upload-preview" style="display:none;">
-          <img id="preview-img" src="" alt="Aperçu" />
-          <button type="button" id="suppr-preview" class="btn btn-sm btn-danger">Retirer</button>
+        <div>
+          <label for="marque_url">Site web</label>
+          <input type="url" id="marque_url" name="marque_url" placeholder="https://klafoutis.com" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Cible</label>
+        <div class="filter-pills">
+          {% for c in cibles %}
+          <label class="chip-radio">
+            <input type="radio" name="cible" value="{{ c }}" />
+            <span>{{ c }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Niveau de difficulté</label>
+        <div class="diff-picker" data-difficulty>
+          <input type="hidden" name="difficulte" value="0" />
+          {% for i in range(1,6) %}
+            <button type="button" class="diff-btn" data-level="{{ i }}">{{ spool() }}</button>
+          {% endfor %}
         </div>
       </div>
     </div>
 
-    <div class="champ">
-      <label for="notes">Notes</label>
-      <textarea id="notes" name="notes" rows="3"
-                placeholder="Tailles, tissu recommandé, remarques…"></textarea>
+    <div class="form-section">
+      <h2 class="form-section__title">Couverture &amp; détails</h2>
+
+      <div class="form-row">
+        <label for="image">Image de couverture</label>
+        <div class="form-upload">
+          <span class="form-upload__icon">{{ svg_image() }}</span>
+          <input type="file" id="image" name="image" accept="image/*" />
+          <span class="form-upload__hint">JPG, PNG, WEBP — facultatif</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label for="url">Lien vers la fiche du patron</label>
+        <input type="url" id="url" name="url" placeholder="https://…" />
+      </div>
+
+      <div class="form-row">
+        <label for="notes">Notes</label>
+        <textarea id="notes" name="notes" rows="3" placeholder="Tailles, tissu recommandé, remarques…"></textarea>
+      </div>
     </div>
 
     <div class="form-actions">
-      <a href="{{ url_for('index') }}" class="btn btn-secondary">Annuler</a>
-      <button type="submit" class="btn btn-primary">Créer le patron</button>
+      <a href="{{ url_for('index') }}" class="btn btn--ghost">Annuler</a>
+      <button type="submit" class="btn btn--terra">Créer le patron</button>
     </div>
-
   </form>
 </div>
+{% endblock %}
 
-<script>
-  const input    = document.getElementById('image');
-  const zone     = document.getElementById('upload-zone');
-  const previewBox = document.getElementById('upload-preview');
-  const previewImg = document.getElementById('preview-img');
-  const suppBtn  = document.getElementById('suppr-preview');
-  const inner    = zone.querySelector('.upload-inner');
-
-  input.addEventListener('change', () => {
-    const file = input.files[0];
-    if (file) {
-      previewImg.src = URL.createObjectURL(file);
-      previewBox.style.display = 'flex';
-      inner.style.display = 'none';
-    }
-  });
-
-  suppBtn.addEventListener('click', () => {
-    input.value = '';
-    previewBox.style.display = 'none';
-    inner.style.display = 'flex';
-  });
-</script>
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
 {% endblock %}

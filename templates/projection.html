@@ -1,184 +1,52 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <title>{{ patron.nom }} — Projection</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: #0d0d0d;
-      color: #f5f0e8;
-      font-family: 'Georgia', serif;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+{% extends "base.html" %}
+{% from "_macros.html" import svg_close, svg_project, cible_badge, spools %}
 
-    /* Barre contrôles — visible uniquement au survol */
-    .proj-controls {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      padding: 0.75rem 1.5rem;
-      background: rgba(0,0,0,0.75);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 100;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    body:hover .proj-controls { opacity: 1; }
-    .proj-controls a { color: #c4956a; text-decoration: none; font-size: 0.9rem; }
-    .proj-controls a:hover { text-decoration: underline; }
-    .proj-controls button {
-      background: none;
-      border: 1px solid #555;
-      color: #aaa;
-      padding: 0.3rem 0.8rem;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.85rem;
-    }
+{% block title %}Projection — {{ patron.nom }}{% endblock %}
+{% block body_class %}is-projection{% endblock %}
 
-    .proj-main {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4rem;
-      gap: 5rem;
-    }
+{% block head_extra %}
+<style>
+body.is-projection { background: #0F0B05; color: #F4EDE0; }
+body.is-projection .site-header, body.is-projection footer { display: none; }
+body.is-projection main { padding: 0; }
+.proj { min-height: 100vh; display: grid; place-items: center; padding: 40px 32px; position: relative; }
+.proj__close { position: absolute; top: 18px; right: 22px; color: #F4EDE0; opacity: .7; }
+.proj__close:hover { opacity: 1; }
+.proj__inner { max-width: 720px; text-align: center; }
+.proj__cible { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--terracotta-3); margin-bottom: 18px; }
+.proj__nom { font-family: var(--display); font-size: 96px; font-weight: 400; line-height: .95; letter-spacing: -.01em; color: #F4EDE0; }
+.proj__nom em { font-style: italic; color: var(--terracotta-3); }
+.proj__marque { font-family: var(--display); font-style: italic; font-size: 22px; color: rgba(244,237,224,.6); margin-top: 14px; }
+.proj__desc { font-family: var(--display); font-style: italic; font-size: 22px; color: rgba(244,237,224,.75); margin-top: 24px; line-height: 1.4; }
+.proj__diff { display: inline-flex; gap: 12px; align-items: center; margin-top: 28px; padding: 14px 22px; border: 1px solid rgba(244,237,224,.18); border-radius: 999px; }
+.proj__diff-label { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: rgba(244,237,224,.55); }
+.proj__rule { margin: 38px auto; width: 240px; border: 0; border-top: 1px dashed rgba(244,237,224,.25); }
+.proj .spool { color: rgba(244,237,224,.3); }
+.proj .spool.is-on { color: var(--terracotta-3); }
+</style>
+{% endblock %}
 
-    .proj-image-zone img {
-      max-height: 78vh;
-      max-width: 50vw;
-      object-fit: contain;
-      border-radius: 4px;
-      box-shadow: 0 8px 48px rgba(0,0,0,0.7);
-    }
-    .proj-image-vide {
-      width: 260px; height: 340px;
-      border: 2px dashed #333;
-      border-radius: 8px;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      color: #444; font-size: 4rem; gap: 1rem;
-    }
-    .proj-image-vide p { font-size: 0.9rem; }
-
-    .proj-info { flex: 1; min-width: 0; }
-
-    .proj-cible {
-      display: inline-block;
-      padding: 0.3rem 1rem;
-      border: 1px solid #c4956a;
-      color: #c4956a;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 1.2rem;
-    }
-
-    .proj-nom {
-      font-size: clamp(2rem, 4vw, 3.5rem);
-      font-weight: normal;
-      line-height: 1.1;
-      margin-bottom: 1rem;
-    }
-
-    .proj-marque {
-      font-size: 1rem;
-      color: #666;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      margin-bottom: 1.5rem;
-    }
-
-    .proj-description {
-      font-size: clamp(1rem, 1.5vw, 1.2rem);
-      line-height: 1.7;
-      color: #999;
-      max-width: 50ch;
-    }
-
-    /* Message si pas de PDF projecteur */
-    .proj-no-pdf {
-      margin-top: 2rem;
-      padding: 0.75rem 1.2rem;
-      border: 1px solid #333;
-      border-radius: 6px;
-      color: #666;
-      font-size: 0.85rem;
-    }
-
-    .proj-footer {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      padding: 0.5rem 1.5rem;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      justify-content: center;
-      gap: 2rem;
-      font-size: 0.75rem;
-      color: #444;
-    }
-    .proj-footer kbd {
-      background: #222; border: 1px solid #444;
-      border-radius: 3px; padding: 0.1rem 0.4rem;
-      font-size: 0.7rem; color: #777;
-    }
-  </style>
-</head>
-<body>
-
-  <div class="proj-controls">
-    <a href="{{ url_for('detail', slug=patron.slug) }}">← Retour à la fiche</a>
-    <button onclick="toggleFullscreen()">Plein écran</button>
-  </div>
-
-  <div class="proj-main">
-    <div class="proj-image-zone">
-      {% if patron.image %}
-        <img src="{{ url_for('fichier', slug=patron.slug, filename=patron.image) }}"
-             alt="{{ patron.nom }}" />
-      {% else %}
-        <div class="proj-image-vide">
-          <span>✂</span>
-          <p>Pas d'image</p>
-        </div>
-      {% endif %}
+{% block content %}
+<a href="{{ url_for('detail', slug=patron.slug) }}" class="proj__close">{{ svg_close() }}</a>
+<div class="proj">
+  <div class="proj__inner">
+    <div class="proj__cible">{{ cible }} · Projection</div>
+    <h1 class="proj__nom">{{ patron.nom }}</h1>
+    {% if patron.marque %}<p class="proj__marque">{{ patron.marque }}</p>{% endif %}
+    {% if patron.description %}<p class="proj__desc">{{ patron.description }}</p>{% endif %}
+    {% if patron.difficulte %}
+    <hr class="proj__rule" />
+    <div class="proj__diff">
+      <span class="proj__diff-label">Niveau</span>
+      {{ spools(patron.difficulte, 'lg') }}
     </div>
-
-    <div class="proj-info">
-      <div class="proj-cible">{{ cible }}</div>
-      <h1 class="proj-nom">{{ patron.nom }}</h1>
-      {% if patron.marque %}
-        <p class="proj-marque">{{ patron.marque }}</p>
-      {% endif %}
-      {% if patron.description %}
-        <p class="proj-description">{{ patron.description }}</p>
-      {% endif %}
-      <div class="proj-no-pdf">Aucun fichier projecteur disponible pour cette cible.</div>
-    </div>
+    {% endif %}
+    {% if patron.image %}
+    <hr class="proj__rule" />
+    <img src="{{ url_for('fichier', slug=patron.slug, filename=patron.image) }}"
+         alt="{{ patron.nom }}"
+         style="max-width: 480px; max-height: 60vh; border-radius: 8px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.6);" />
+    {% endif %}
   </div>
-
-  <div class="proj-footer">
-    <span><kbd>F</kbd> Plein écran</span>
-    <span><kbd>Échap</kbd> Quitter</span>
-  </div>
-
-  <script>
-    function toggleFullscreen() {
-      if (!document.fullscreenElement)
-        document.documentElement.requestFullscreen().catch(() => {});
-      else
-        document.exitFullscreen();
-    }
-    document.addEventListener('keydown', e => {
-      if (e.key === 'f' || e.key === 'F') toggleFullscreen();
-    });
-  </script>
-</body>
-</html>
+</div>
+{% endblock %}

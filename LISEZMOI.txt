@@ -1,0 +1,64 @@
+═══════════════════════════════════════════════════
+  CkiLePatron — Guide d'installation
+═══════════════════════════════════════════════════
+
+
+── INSTALLATION (première fois) ────────────────────
+
+  1. Décompressez ce ZIP dans le dossier de votre choix.
+
+  2. Double-cliquez sur : installer.bat
+
+     Ce script installe automatiquement tout le nécessaire
+     (Python inclus si absent) et propose l'installation
+     de l'extension navigateur.
+
+
+── LANCEMENT QUOTIDIEN ─────────────────────────────
+
+  Double-cliquez sur : lancer.pyw
+
+  L'application démarre et le navigateur s'ouvre
+  automatiquement sur http://127.0.0.1:5000
+
+  Astuce : clic droit sur lancer.pyw
+           > Envoyer vers > Bureau (créer un raccourci)
+
+
+── EXTENSION NAVIGATEUR ────────────────────────────
+
+  L'extension permet d'importer un patron depuis
+  le site Klafoutis en un seul clic.
+
+  Si vous n'avez pas installé l'extension via
+  installer.bat, voici la procédure manuelle :
+
+  1. Ouvrez Chrome ou Edge.
+
+  2. Allez sur la page des extensions :
+       Chrome : chrome://extensions
+       Edge   : edge://extensions
+
+  3. Activez le "Mode développeur"
+     (interrupteur en haut à droite).
+
+  4. Cliquez sur "Charger l'extension non empaquetée".
+
+  5. Sélectionnez le dossier "extension"
+     situé dans ce même répertoire.
+
+  L'icône CkiLePatron apparaît alors dans la barre
+  du navigateur.
+
+
+── VOS PATRONS ─────────────────────────────────────
+
+  Placez vos dossiers de patrons dans le dossier :
+     patrons\
+
+  Format du nom de dossier :
+     NOM - description - MARQUE - CIBLE
+     ex : Blouse Margot - Col lavallière - Orageuse - Femme
+
+
+═══════════════════════════════════════════════════

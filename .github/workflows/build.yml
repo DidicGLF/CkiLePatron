@@ -1,0 +1,49 @@
+name: Build Windows EXE
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install flask pyinstaller
+
+      - name: Build EXE
+        run: pyinstaller main.spec
+
+      - name: Préparer la distribution
+        run: |
+          New-Item -ItemType Directory dist\CkiLePatron
+          Copy-Item dist\CkiLePatron.exe  dist\CkiLePatron\
+          Copy-Item LISEZMOI.txt          dist\CkiLePatron\
+          New-Item -ItemType Directory    dist\CkiLePatron\patrons
+          Copy-Item extension             dist\CkiLePatron\extension -Recurse
+          Remove-Item dist\CkiLePatron\extension\generate_icon.html -ErrorAction SilentlyContinue
+          Compress-Archive -Path dist\CkiLePatron\* -DestinationPath dist\CkiLePatron-windows.zip
+        shell: pwsh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CkiLePatron-windows
+          path: dist/CkiLePatron-windows.zip
+
+      - name: Créer une release GitHub
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/CkiLePatron-windows.zip
