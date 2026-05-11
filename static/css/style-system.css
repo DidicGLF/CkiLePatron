@@ -487,6 +487,27 @@ header:not(.site-header) {
 .empty p { color: var(--muted); }
 
 /* ============================================================
+   BANNIÈRE EXTENSION
+   ============================================================ */
+.ext-banner {
+  background: var(--card); border-bottom: 1px solid var(--rule);
+  padding: 16px 24px; display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 24px; flex-wrap: wrap;
+}
+.ext-banner__body { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.ext-banner__body strong { font-size: 15px; color: var(--ink); }
+.ext-banner__body span { color: var(--ink-2); }
+.ext-banner__steps { margin: 6px 0 0 18px; color: var(--ink-2); line-height: 1.8; }
+.ext-banner__steps a { color: var(--terracotta); }
+.ext-banner__steps code { font-size: 12px; background: var(--rule-soft); padding: 1px 6px; border-radius: 4px; }
+.ext-banner__close {
+  flex-shrink: 0; align-self: center;
+  background: var(--terracotta); color: #fff; border: none; cursor: pointer;
+  padding: 8px 14px; border-radius: var(--r); font-size: 13px; font-weight: 500;
+}
+.ext-banner__close:hover { background: var(--terracotta-2); }
+
+/* ============================================================
    FOOTER
    ============================================================ */
 .site-footer {

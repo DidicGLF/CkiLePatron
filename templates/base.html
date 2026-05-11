@@ -31,6 +31,31 @@
   </div>
 </header>
 
+{% if ext_dossier %}
+<div class="ext-banner" id="ext-banner">
+  <div class="ext-banner__body">
+    <strong>Extension navigateur non installée</strong>
+    <span>Pour importer des patrons depuis Klafoutis en un clic, installez l'extension :</span>
+    <ol class="ext-banner__steps">
+      <li>Ouvrez <a href="chrome://extensions" target="_blank">chrome://extensions</a> (ou <a href="edge://extensions" target="_blank">edge://extensions</a>)</li>
+      <li>Activez le <strong>Mode développeur</strong> (interrupteur en haut à droite)</li>
+      <li>Cliquez <strong>Charger l'extension non empaquetée</strong></li>
+      <li>Sélectionnez le dossier : <code>{{ ext_dossier }}</code></li>
+    </ol>
+  </div>
+  <button class="ext-banner__close" onclick="dismissExt()">J'ai installé l'extension ✓</button>
+</div>
+<script>
+  if (localStorage.getItem('ckp-ext-ok')) {
+    document.getElementById('ext-banner').style.display = 'none';
+  }
+  function dismissExt() {
+    localStorage.setItem('ckp-ext-ok', '1');
+    document.getElementById('ext-banner').style.display = 'none';
+  }
+</script>
+{% endif %}
+
 <main>
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
