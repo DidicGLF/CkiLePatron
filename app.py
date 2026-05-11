@@ -239,6 +239,11 @@ app = Flask(__name__,
 app.config['SECRET_KEY'] = 'ckilepatron-secret'
 app.config['PATRONS_DIR'] = PATRONS_DIR
 
+@app.context_processor
+def inject_globals():
+    ext_path = os.path.join(BASE_DIR, 'extension')
+    return dict(ext_dossier=ext_path if os.path.isdir(ext_path) else None)
+
 
 @app.route('/')
 def index():
