@@ -9,6 +9,13 @@ from pathlib import Path
 from flask import (Flask, render_template, request, redirect,
                    send_from_directory, abort, url_for, flash, jsonify)
 
+# ── Module optionnel : projection (commenter pour désactiver) ──
+try:
+    from app_projection import proj_bp, FITZ_DISPONIBLE
+except ImportError:
+    proj_bp = None
+    FITZ_DISPONIBLE = False
+
 # Quand l'app est bundlée par PyInstaller :
 #   sys._MEIPASS  → dossier temporaire contenant templates/ et static/
 #   sys.executable → chemin du .exe, donc dossier de l'exe = dossier de travail
@@ -48,6 +55,7 @@ CIBLE_META = {
 
 CIBLES_FILTRE     = ['Femme', 'Homme', 'Enfant', 'Bébé', 'Mixte', 'Famille']
 DIFFICULTES       = {1: 'Débutant', 2: 'Facile', 3: 'Intermédiaire', 4: 'Avancé', 5: 'Expert'}
+STATUTS           = {'en_cours': 'En cours', 'cousu': 'Cousu'}
 
 # ── Utilitaires ────────────────────────────────────────────────────────────
 
@@ -184,6 +192,8 @@ def scan_patron_folder(folder_path: str, folder_name: str) -> dict | None:
         'notes':            extra.get('notes', ''),
         'difficulte':       int(extra['difficulte']) if str(extra.get('difficulte', '')).isdigit() else 0,
         'marque_url':       extra.get('marque_url', ''),
+        'statut':           extra.get('statut', '') if extra.get('statut', '') in STATUTS else '',
+        'nb_realisations':  int(extra['nb_realisations']) if str(extra.get('nb_realisations', '')).isdigit() else 0,
     }
 
 
@@ -239,10 +249,14 @@ app = Flask(__name__,
 app.config['SECRET_KEY'] = 'ckilepatron-secret'
 app.config['PATRONS_DIR'] = PATRONS_DIR
 
+if proj_bp is not None:
+    app.register_blueprint(proj_bp)
+
 @app.context_processor
 def inject_globals():
     ext_path = os.path.join(BASE_DIR, 'extension')
-    return dict(ext_dossier=ext_path if os.path.isdir(ext_path) else None)
+    return dict(ext_dossier=ext_path if os.path.isdir(ext_path) else None,
+                fitz_disponible=FITZ_DISPONIBLE)
 
 
 @app.route('/')
@@ -254,6 +268,7 @@ def index():
     marque_filtre     = request.args.get('marque', '')
     difficulte_filtre = request.args.get('difficulte', '')
     tutoriel_filtre   = request.args.get('tutoriel', '')
+    statut_filtre     = request.args.get('statut', '')
     recherche         = request.args.get('q', '').strip()
 
     patrons = tous
@@ -278,6 +293,10 @@ def index():
     if tutoriel_filtre:
         patrons = [p for p in patrons if p['tutoriel']]
 
+    # Filtre statut
+    if statut_filtre and statut_filtre in STATUTS:
+        patrons = [p for p in patrons if p['statut'] == statut_filtre]
+
     # Recherche texte
     if recherche:
         rl = recherche.lower()
@@ -292,10 +311,12 @@ def index():
                            cibles=CIBLES_FILTRE,
                            marques=marques,
                            difficultes=DIFFICULTES,
+                           statuts=STATUTS,
                            cible_filtre=cible_filtre,
                            marque_filtre=marque_filtre,
                            difficulte_filtre=difficulte_filtre,
                            tutoriel_filtre=tutoriel_filtre,
+                           statut_filtre=statut_filtre,
                            recherche=recherche)
                            
 
@@ -304,7 +325,7 @@ def detail(slug):
     patron = find_patron_by_slug(slug)
     if patron is None:
         abort(404)
-    return render_template('detail.html', patron=patron)
+    return render_template('detail.html', patron=patron, statuts=STATUTS, difficultes=DIFFICULTES)
 
 
 @app.route('/patron/<slug>/fichier/<path:filename>')
@@ -345,6 +366,22 @@ def projeter(slug, cible):
         )
     # Fallback : page sombre avec image
     return render_template('projection.html', patron=patron, cible=cible)
+
+
+@app.route('/patron/<slug>/statut', methods=['POST'])
+def set_statut(slug):
+    patron = find_patron_by_slug(slug)
+    if patron is None:
+        abort(404)
+    folder_path = os.path.join(PATRONS_DIR, patron['dossier'])
+    statut = request.form.get('statut', '')
+    val    = request.form.get('nb_realisations', '0')
+    nb_realisations = int(val) if val.isdigit() else 0
+    extra = read_patron_json(folder_path)
+    extra['statut']          = statut if statut in STATUTS else ''
+    extra['nb_realisations'] = nb_realisations
+    write_patron_json(folder_path, extra)
+    return ('', 204)
 
 
 @app.route('/patron/<slug>/difficulte', methods=['POST'])
@@ -559,4 +596,5 @@ def api_importer():
 
 if __name__ == '__main__':
     os.makedirs(PATRONS_DIR, exist_ok=True)
+    print(f"  Projection PDF : {'activée (PyMuPDF)' if FITZ_DISPONIBLE else 'désactivée (PyMuPDF manquant)'}")
     app.run(debug=True)

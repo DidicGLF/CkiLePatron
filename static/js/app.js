@@ -37,6 +37,53 @@
     bList.addEventListener('click', () => apply('list'));
   }
 
+  // ---- Sélecteur de statut ----
+  const picker = document.querySelector('[data-statut-picker]');
+  if (picker) {
+    const slug    = picker.dataset.slug;
+    const btns    = picker.querySelectorAll('.statut-btn');
+    const counter = picker.querySelector('.statut-counter');
+    const valEl   = picker.querySelector('.counter-val');
+    const decBtn  = picker.querySelector('.counter-dec');
+    const incBtn  = picker.querySelector('.counter-inc');
+    let current   = picker.dataset.current || '';
+    let nb        = parseInt(picker.dataset.nb || '0', 10);
+
+    const refresh = () => {
+      btns.forEach(b => b.classList.toggle('is-on', b.dataset.s === current));
+      if (counter) {
+        counter.classList.toggle('is-visible', current === 'cousu');
+        if (valEl) valEl.textContent = nb;
+      }
+    };
+
+    const save = () => {
+      fetch(`/patron/${slug}/statut`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `statut=${encodeURIComponent(current)}&nb_realisations=${nb}`
+      });
+    };
+
+    btns.forEach(b => {
+      b.addEventListener('click', () => {
+        current = b.dataset.s === current ? '' : b.dataset.s;
+        if (current !== 'cousu') nb = 0;
+        else if (nb === 0) nb = 1;
+        refresh(); save();
+      });
+    });
+
+    if (decBtn) decBtn.addEventListener('click', () => {
+      if (nb > 1) { nb--; refresh(); save(); }
+    });
+    if (incBtn) incBtn.addEventListener('click', () => {
+      nb++; refresh(); save();
+    });
+
+    refresh();
+  }
+
   // ---- Sélecteur de difficulté (5 bobines) ----
   document.querySelectorAll('[data-difficulty]').forEach((el) => {
     const input = el.querySelector('input[type=hidden]');

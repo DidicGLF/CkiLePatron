@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import svg_search, svg_sliders, svg_grid, svg_list, svg_scissors, svg_book, cover, cible_badge, spools, marque_badge %}
+{% from "_macros.html" import svg_search, svg_sliders, svg_grid, svg_list, svg_scissors, svg_book, cover, cible_badge, spools, marque_badge, statut_badge %}
 
 {% block title %}Mes patrons — CkiLePatron{% endblock %}
 
@@ -13,8 +13,8 @@
     </div>
   </section>
 
-  {% set filtres_actifs = (cible_filtre or marque_filtre or difficulte_filtre or tutoriel_filtre) %}
-  {% set nb_filtres = [cible_filtre, marque_filtre, difficulte_filtre, tutoriel_filtre] | select | list | length %}
+  {% set filtres_actifs = (cible_filtre or marque_filtre or difficulte_filtre or tutoriel_filtre or statut_filtre) %}
+  {% set nb_filtres = [cible_filtre, marque_filtre, difficulte_filtre, tutoriel_filtre, statut_filtre] | select | list | length %}
 
   <form method="get" class="filters {% if filtres_actifs %}is-open{% endif %}" id="filters" data-filters>
     <div class="filters__bar">
@@ -79,10 +79,23 @@
       <div class="filter-row">
         <span class="filter-row__label">Tutoriel</span>
         <div class="filter-pills">
-          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, difficulte=difficulte_filtre, q=recherche) }}"
+          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, difficulte=difficulte_filtre, statut=statut_filtre, q=recherche) }}"
              class="chip {% if not tutoriel_filtre %}is-on{% endif %}">Tous</a>
-          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, difficulte=difficulte_filtre, tutoriel='1', q=recherche) }}"
+          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, difficulte=difficulte_filtre, tutoriel='1', statut=statut_filtre, q=recherche) }}"
              class="chip {% if tutoriel_filtre %}is-on{% endif %}">{{ svg_book() }} Avec tutoriel</a>
+        </div>
+      </div>
+
+      {# Statut #}
+      <div class="filter-row">
+        <span class="filter-row__label">Statut</span>
+        <div class="filter-pills">
+          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, difficulte=difficulte_filtre, tutoriel=tutoriel_filtre, q=recherche) }}"
+             class="chip {% if not statut_filtre %}is-on{% endif %}">Tous</a>
+          {% for key, label in statuts.items() %}
+          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, difficulte=difficulte_filtre, tutoriel=tutoriel_filtre, statut=key, q=recherche) }}"
+             class="chip chip-statut chip-statut--{{ key }} {% if statut_filtre == key %}is-on{% endif %}">{{ label }}</a>
+          {% endfor %}
         </div>
       </div>
     </div>
@@ -111,10 +124,13 @@
           {% if p.description %}<p class="card__desc">{{ p.description|truncate(100) }}</p>{% endif %}
         </div>
         {% if p.tutoriel %}<span class="card__tuto card__tuto--inline">{{ svg_book() }}<span>Tutoriel</span></span>{% endif %}
-        {% if p.marque %}
+        {% if p.marque or p.statut %}
           <div class="card__meta">
-            <span class="card__marque">{{ p.marque }}</span>
+            {{ statut_badge(p.statut, p.nb_realisations, 'sm') }}
+            {% if p.marque %}
+            <span class="card__marque" style="margin-left:auto">{{ p.marque }}</span>
             <span class="card__marque" style="opacity:.6">N° {{ num }}</span>
+            {% endif %}
           </div>
         {% endif %}
       </div>

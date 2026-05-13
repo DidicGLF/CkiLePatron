@@ -177,6 +177,61 @@ a.marque-pill:hover { color: var(--terracotta); border-color: var(--terracotta-3
   .grid--list .card__desc { white-space: normal; }
 }
 
+/* ---- Statut badge ---- */
+.statut {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px 4px 8px; border-radius: 999px;
+  font-family: var(--ui); font-size: 11px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  background: transparent; border: 1px dashed var(--muted);
+  color: var(--muted);
+}
+.statut::before {
+  content: ""; width: 5px; height: 5px;
+  border-radius: 999px; background: currentColor; flex-shrink: 0;
+}
+.statut--sm { font-size: 10px; padding: 2px 8px 2px 6px; }
+
+/* ---- Statut filter chips ---- */
+.chip-statut--en_cours.is-on  { background: var(--taupe); border-color: var(--taupe); }
+.chip-statut--cousu.is-on    { background: var(--terracotta); border-color: var(--terracotta); }
+
+/* ---- Statut picker (page détail) ---- */
+.statut-picker { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.statut-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--rule); background: #fff;
+  font-family: var(--ui); font-size: 11px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted-2); cursor: pointer; transition: 120ms;
+}
+.statut-btn::before {
+  content: ""; width: 5px; height: 5px;
+  border-radius: 999px; background: currentColor; flex-shrink: 0;
+}
+.statut-btn:hover { color: var(--ink); border-color: var(--ink); }
+.statut-btn[data-s="en_cours"].is-on  { color: var(--taupe); border-color: var(--taupe); background: rgba(139,111,71,.1); }
+.statut-btn[data-s="cousu"].is-on    { color: var(--terracotta); border-color: var(--terracotta); background: rgba(184,84,71,.08); }
+
+.statut-counter { display: none; align-items: center; gap: 6px; margin-left: 4px; }
+.statut-counter.is-visible { display: inline-flex; }
+
+.counter-btn {
+  width: 24px; height: 24px;
+  display: grid; place-items: center;
+  border-radius: 999px; border: 1px solid var(--rule);
+  background: var(--paper); color: var(--ink-2);
+  font-size: 15px; line-height: 1; cursor: pointer; transition: 120ms;
+}
+.counter-btn:hover { border-color: var(--terracotta); color: var(--terracotta); }
+.counter-val {
+  font-family: var(--display); font-style: italic;
+  font-size: 15px; color: var(--ink-2);
+  min-width: 16px; text-align: center;
+}
+
 /* ---- Empty ---- */
 .empty {
   text-align: center; padding: 80px 20px;

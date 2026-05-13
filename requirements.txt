@@ -1,3 +1,4 @@
 # Dépendances — toutes disponibles dans Python stdlib sauf Flask
 flask
-# flask-sqlalchemy non requis : sqlite3 stdlib utilisé directement
+# PyMuPDF : optionnel, active la projection de patrons PDF
+PyMuPDF

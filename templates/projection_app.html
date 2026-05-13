@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Projection — {{ patron_nom }}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Work+Sans:wght@400;500&display=swap');
+
+:root {
+  --paper:        #F4EDE0;
+  --paper-2:      #EDE3D2;
+  --card:         #FBF7EE;
+  --card-warm:    #F7EFDE;
+  --ink:          #1F1A12;
+  --ink-2:        #3A2F1E;
+  --muted:        #8A7860;
+  --muted-2:      #B5A48B;
+  --terracotta:   #B85447;
+  --terracotta-2: #9C3F36;
+  --terracotta-3: #E8B5AB;
+  --taupe:        #8B6F47;
+  --sage:         #6F8268;
+  --rule:         #D9CAB1;
+  --rule-soft:    #E6DAC4;
+  --lift:         0 1px 0 rgba(60,40,20,.04), 0 12px 28px -16px rgba(60,40,20,.16);
+  --r:            8px;
+  --r-lg:         14px;
+  --display:      'Cormorant Garamond', Georgia, serif;
+  --ui:           'Work Sans', system-ui, sans-serif;
+  --panel:        240px;
+  --tb:           52px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100dvh; overflow: hidden; font-family: var(--ui); background: var(--paper); color: var(--ink); -webkit-font-smoothing: antialiased; }
+button { font: inherit; cursor: pointer; border: 0; background: transparent; color: inherit; }
+input { font: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+
+/* ── ÉCRAN CONFIG ── */
+#screen-config { height: 100dvh; display: none; flex-direction: column; background: var(--paper); }
+
+#cfg-header {
+  padding: 20px 28px 16px;
+  background: color-mix(in oklab, var(--card) 90%, transparent);
+  border-bottom: 1px solid var(--rule);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+#cfg-header h2 {
+  font-family: var(--display); font-weight: 500; font-size: 28px;
+  line-height: 1.1; letter-spacing: -0.01em;
+}
+#cfg-header p {
+  font-family: var(--display); font-style: italic;
+  font-size: 14px; color: var(--muted); margin-top: 3px;
+}
+
+#cfg-body { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+
+.cfg-section {
+  background: var(--card); border: 1px solid var(--rule);
+  border-radius: var(--r-lg); padding: 20px 22px;
+  box-shadow: var(--lift);
+}
+.cfg-section-title {
+  font-family: var(--ui); font-size: 11px; font-weight: 500;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px dashed var(--rule);
+}
+
+/* Chips calques */
+.layers-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.layer-card {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 999px;
+  border: 1px solid var(--rule); background: #fff;
+  font-size: 13px; color: var(--ink-2);
+  cursor: pointer; transition: 120ms; white-space: nowrap;
+}
+.layer-card:hover { border-color: var(--ink); color: var(--ink); }
+.layer-card.sel { background: var(--terracotta); border-color: var(--terracotta); color: #fff; }
+.layer-card.sel.size { background: var(--taupe); border-color: var(--taupe); color: #fff; }
+.lc-check { display: none; }
+.lc-name { font-size: 13px; }
+
+/* Ligne dimensions projecteur */
+.proj-row {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.proj-row label {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted);
+}
+.dim-in {
+  width: 64px; font-family: var(--ui); font-size: 15px; font-weight: 500;
+  padding: 8px 10px; border: 1px solid var(--rule); border-radius: var(--r);
+  background: var(--paper); color: var(--ink); text-align: center;
+  transition: 120ms;
+}
+.dim-in:focus { outline: none; border-color: var(--terracotta); box-shadow: 0 0 0 3px rgba(184,84,71,.12); }
+.proj-row span { color: var(--muted); font-size: 14px; }
+
+#cfg-footer {
+  padding: 14px 28px; border-top: 1px solid var(--rule);
+  background: var(--card);
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+}
+#cfg-summary {
+  font-family: var(--display); font-style: italic;
+  font-size: 15px; color: var(--muted);
+}
+
+/* ── BOUTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 18px; border-radius: 999px;
+  font-family: var(--ui); font-size: 13px; font-weight: 500;
+  border: 1px solid var(--rule); background: var(--card);
+  color: var(--ink-2); cursor: pointer; transition: 120ms;
+  white-space: nowrap; text-decoration: none;
+}
+.btn:hover { border-color: var(--ink); color: var(--ink); }
+.btn.primary {
+  background: var(--terracotta); border-color: var(--terracotta); color: #fff;
+}
+.btn.primary:hover { background: var(--terracotta-2); border-color: var(--terracotta-2); }
+
+/* ── ÉCRAN APP ── */
+#screen-app { height: 100dvh; display: none; flex-direction: column; }
+
+/* TOOLBAR */
+#toolbar {
+  height: var(--tb);
+  background: var(--card); border-bottom: 1px solid var(--rule);
+  display: flex; align-items: center; gap: 4px; padding: 0 14px;
+  flex-shrink: 0; overflow-x: auto; overflow-y: hidden; z-index: 20;
+}
+#toolbar::-webkit-scrollbar { height: 0; }
+.tsep { width: 1px; height: 22px; background: var(--rule); flex-shrink: 0; margin: 0 4px; }
+.tlbl {
+  font-size: 10px; font-weight: 500; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted-2);
+  white-space: nowrap; flex-shrink: 0;
+}
+.tbtn {
+  font-family: var(--ui); font-size: 12px; font-weight: 500;
+  padding: 5px 12px; border-radius: 999px;
+  border: 1px solid var(--rule); background: transparent; color: var(--ink-2);
+  cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: 120ms;
+  touch-action: manipulation;
+}
+.tbtn:hover { border-color: var(--ink); color: var(--ink); }
+.tbtn.active { background: var(--terracotta); border-color: var(--terracotta); color: #fff; }
+.tbtn.blue-btn { background: var(--taupe); border-color: var(--taupe); color: #fff; }
+.tbtn.blue-btn:hover { background: var(--taupe-deep, #5D4A30); border-color: var(--taupe-deep, #5D4A30); }
+.tbtn.danger:hover { color: var(--terracotta-2); border-color: var(--terracotta-3); }
+.tb-dim {
+  width: 48px; font-family: var(--ui); font-size: 12px; font-weight: 500;
+  padding: 4px 6px; border: 1px solid var(--rule); border-radius: var(--r);
+  background: var(--paper); color: var(--ink); text-align: center; flex-shrink: 0;
+  transition: 120ms;
+}
+.tb-dim:focus { outline: none; border-color: var(--terracotta); }
+#mode-pill {
+  font-size: 11px; font-weight: 500; padding: 4px 12px;
+  border-radius: 999px; white-space: nowrap; flex-shrink: 0; letter-spacing: 0.04em;
+}
+#mode-pill.cut   { background: rgba(184,84,71,0.1);  color: var(--terracotta);  border: 1px solid var(--terracotta-3); }
+#mode-pill.place { background: rgba(139,111,71,0.1); color: var(--taupe);       border: 1px solid rgba(139,111,71,0.35); }
+
+/* BODY */
+#app-body { flex: 1; display: flex; overflow: hidden; }
+
+/* ── VUE DÉCOUPAGE ── */
+#cut-view { flex: 1; display: flex; overflow: hidden; }
+#cut-wrap { flex: 1; overflow: hidden; position: relative; background: var(--paper-2); cursor: grab; }
+#svg-container { position: absolute; transform-origin: top left; user-select: none; }
+#svg-container svg { display: block; overflow: visible; }
+#draw-rect { position: absolute; border: 2px solid var(--terracotta); background: rgba(184,84,71,0.08); pointer-events: none; display: none; z-index: 30; }
+.cut-zone { position: absolute; border: 2px solid var(--terracotta); background: rgba(184,84,71,0.07); z-index: 20; cursor: move; display: flex; align-items: center; justify-content: center; }
+.cz-lbl { font-size: 10px; font-weight: 500; color: var(--terracotta-2); background: rgba(255,255,255,0.92); padding: 1px 7px; border-radius: 3px; pointer-events: none; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cz-del { position: absolute; top: -8px; right: -8px; width: 17px; height: 17px; background: var(--terracotta); color: white; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5; }
+.cz-handle { position: absolute; width: 12px; height: 12px; background: white; border: 2px solid var(--terracotta); border-radius: 2px; z-index: 6; touch-action: none; }
+.cz-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
+.cz-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
+.cz-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
+.cz-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
+.piece { position: absolute; cursor: grab; touch-action: none; border: 1.5px solid rgba(184,84,71,0.35); border-radius: 3px; overflow: visible; background: white; }
+.piece:active { cursor: grabbing; }
+.piece.selected { border-color: var(--terracotta); box-shadow: 0 0 0 2px rgba(184,84,71,0.18), 0 6px 18px rgba(0,0,0,0.12); z-index: 900 !important; }
+.piece svg { width: 100%; height: 100%; display: block; pointer-events: none; overflow: hidden; }
+
+/* Panneau zones */
+#cut-panel { width: var(--panel); background: var(--card); border-left: 1px solid var(--rule); display: flex; flex-direction: column; flex-shrink: 0; }
+#cp-head { padding: 12px 14px 10px; font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); border-bottom: 1px dashed var(--rule); display: flex; align-items: center; justify-content: space-between; }
+#cp-hint { padding: 10px 14px; font-family: var(--display); font-style: italic; font-size: 13px; color: var(--muted); line-height: 1.6; border-bottom: 1px solid var(--rule-soft); background: var(--card-warm); }
+#zones-list { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+#zones-list::-webkit-scrollbar { width: 3px; }
+#zones-list::-webkit-scrollbar-thumb { background: var(--rule); }
+.zone-item { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid var(--rule); border-radius: var(--r); font-size: 12px; background: #fff; }
+.zi-thumb { width: 36px; height: 28px; object-fit: contain; background: var(--paper-2); border-radius: 3px; flex-shrink: 0; }
+.zi-name { font-size: 12px; line-height: 1.3; flex: 1; color: var(--ink-2); }
+.zi-dims { font-size: 10px; color: var(--muted); }
+.zi-del { color: var(--muted-2); cursor: pointer; font-size: 14px; padding: 2px; flex-shrink: 0; }
+.zi-del:hover { color: var(--terracotta); }
+#cp-foot { padding: 10px 12px; border-top: 1px solid var(--rule); }
+
+/* ── VUE PLACEMENT ── */
+#place-view { flex: 1; display: none; overflow: hidden; position: relative; }
+#place-wrap {
+  position: absolute; inset: 0; overflow: hidden; cursor: grab;
+  background: repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(60,40,20,0.04) 40px),
+              repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(60,40,20,0.04) 40px),
+              var(--paper-2);
+}
+#place-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+#proj-zone { position: absolute; background: rgba(255,255,255,0.7); border: 2px dashed var(--terracotta); box-shadow: 0 0 0 4000px rgba(237,228,210,0.5); }
+#proj-zone::before { content: attr(data-label); position: absolute; top: -20px; left: 0; font-size: 10px; font-weight: 500; color: var(--terracotta); white-space: nowrap; }
+
+.piece-lbl { position: absolute; bottom: -17px; left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--muted); white-space: nowrap; pointer-events: none; background: rgba(244,237,224,0.88); padding: 0 4px; border-radius: 2px; }
+.rot-h { position: absolute; top: -19px; left: 50%; transform: translateX(-50%); width: 16px; height: 16px; background: var(--terracotta); border-radius: 50%; cursor: crosshair; color: white; font-size: 10px; display: none; align-items: center; justify-content: center; touch-action: none; box-shadow: 0 2px 5px rgba(184,84,71,0.35); z-index: 10; }
+.piece.selected .rot-h { display: flex; }
+
+/* Panneau placement */
+#place-panel { position: absolute; right: 0; top: 0; bottom: 0; width: var(--panel); background: var(--card); border-left: 1px solid var(--rule); display: flex; flex-direction: column; z-index: 50; transition: transform 0.25s ease; }
+#place-panel.closed { transform: translateX(var(--panel)); }
+#pp-tog { position: absolute; left: -28px; top: 50%; transform: translateY(-50%); width: 27px; height: 50px; background: var(--card); border: 1px solid var(--rule); border-right: none; border-radius: 8px 0 0 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); writing-mode: vertical-lr; }
+#pp-head { padding: 12px 14px 10px; font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); border-bottom: 1px dashed var(--rule); }
+#pp-list { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+#pp-list::-webkit-scrollbar { width: 3px; }
+#pp-list::-webkit-scrollbar-thumb { background: var(--rule); }
+.pp-item { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid var(--rule); border-radius: var(--r); cursor: pointer; transition: 120ms; font-size: 12px; background: #fff; }
+.pp-item:hover { border-color: var(--taupe); background: var(--card-warm); }
+.pp-item.added { opacity: 0.35; pointer-events: none; }
+.pp-thumb { width: 36px; height: 28px; object-fit: contain; background: var(--paper-2); border-radius: 3px; flex-shrink: 0; }
+.pp-name { font-size: 12px; line-height: 1.3; color: var(--ink-2); }
+.pp-dims { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+#sel-area { padding: 12px 14px; border-top: 1px solid var(--rule); min-height: 100px; }
+#sel-none { font-family: var(--display); font-style: italic; font-size: 13px; color: var(--muted); line-height: 1.7; }
+#sel-info { display: none; }
+#sel-name { font-family: var(--display); font-size: 16px; color: var(--terracotta); font-weight: 500; margin-bottom: 4px; }
+#sel-sub { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+.rrow { display: flex; align-items: center; gap: 3px; margin-bottom: 6px; }
+.rm { width: 26px; height: 26px; background: var(--paper); border: 1px solid var(--rule); border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; transition: 120ms; }
+.rm:hover { border-color: var(--ink); color: var(--ink); }
+#rval { font-family: var(--display); font-style: italic; font-size: 15px; min-width: 36px; text-align: center; color: var(--ink-2); }
+.ab { width: 100%; font-family: var(--ui); font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--rule); background: transparent; color: var(--ink-2); cursor: pointer; margin-top: 4px; transition: 120ms; }
+.ab:hover { border-color: var(--ink); color: var(--ink); }
+.ab.rm-btn:hover { border-color: var(--terracotta-3); color: var(--terracotta-2); background: rgba(184,84,71,0.05); }
+
+/* ── CALIBRATION (écran projeté — reste sombre) ── */
+#screen-calib { position: fixed; inset: 0; z-index: 500; background: #111; display: none; flex-direction: column; align-items: center; justify-content: center; }
+#calib-canvas { position: absolute; inset: 0; overflow: hidden; }
+#calib-view  { position: absolute; inset: 0; transform-origin: 0 0; cursor: grab; user-select: none; touch-action: none; }
+#calib-grid  { position: absolute; transform-origin: top left; pointer-events: none; }
+#calib-grid svg { display: block; }
+.calib-handle { position: absolute; width: 20px; height: 20px; border-radius: 50%; background: #e8a020; border: 2.5px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.55); cursor: grab; transform: translate(-50%,-50%); z-index: 15; touch-action: none; transition: transform 0.1s; }
+.calib-handle:hover { transform: translate(-50%,-50%) scale(1.3); }
+.calib-handle.active { cursor: grabbing; transform: translate(-50%,-50%) scale(1.15); }
+#place-canvas { transform-origin: 0 0; }
+#calib-ui { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); padding: 14px 20px; display: flex; flex-direction: column; gap: 10px; z-index: 20; border-top: 1px solid rgba(255,255,255,0.1); }
+#calib-ui .cu-label { font-size: 10px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; }
+#calib-sep { width: 1px; height: 30px; background: rgba(255,255,255,0.15); }
+.calib-btn { font-family: var(--ui); font-size: 11px; font-weight: 500; padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); color: white; cursor: pointer; transition: 150ms; white-space: nowrap; }
+.calib-btn:hover { background: rgba(255,255,255,0.18); }
+.calib-btn.ok { background: #2a9e5a; border-color: #2a9e5a; }
+.calib-btn.ok:hover { background: #228a4e; }
+input[type=range].calib-slider { -webkit-appearance: none; width: 160px; height: 3px; background: rgba(255,255,255,0.2); border-radius: 2px; outline: none; }
+input[type=range].calib-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: #e8a020; border-radius: 50%; cursor: pointer; }
+
+/* ── LOADING ── */
+#loading { position: fixed; inset: 0; background: rgba(244,237,224,0.92); z-index: 9999; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
+#loading.show { display: flex; }
+.spinner { width: 32px; height: 32px; border: 2px solid var(--rule); border-top-color: var(--terracotta); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading-msg { font-family: var(--display); font-style: italic; font-size: 16px; color: var(--muted); }
+
+/* ── MODAL ── */
+#modal { position: fixed; inset: 0; z-index: 9000; background: rgba(31,26,18,0.45); display: none; align-items: center; justify-content: center; }
+#modal.show { display: flex; }
+.mbox { background: var(--card); border-radius: var(--r-lg); padding: 24px; width: min(320px,90vw); display: flex; flex-direction: column; gap: 14px; box-shadow: 0 24px 48px -12px rgba(31,26,18,0.25); border: 1px solid var(--rule); }
+.mbox h3 { font-family: var(--display); font-size: 20px; font-weight: 500; }
+.mbox p { font-family: var(--display); font-style: italic; font-size: 14px; color: var(--muted); }
+.mbox input { font-family: var(--ui); font-size: 14px; padding: 9px 12px; border: 1px solid var(--rule); border-radius: var(--r); background: var(--paper); width: 100%; transition: 120ms; }
+.mbox input:focus { outline: none; border-color: var(--terracotta); box-shadow: 0 0 0 3px rgba(184,84,71,.12); }
+.mbtns { display: flex; gap: 8px; justify-content: flex-end; }
+.mbtn { font-family: var(--ui); font-size: 12px; font-weight: 500; padding: 7px 16px; border-radius: 999px; border: 1px solid var(--rule); background: transparent; color: var(--ink-2); cursor: pointer; transition: 120ms; }
+.mbtn:hover { border-color: var(--ink); }
+.mbtn.ok { background: var(--terracotta); border-color: var(--terracotta); color: #fff; }
+.mbtn.ok:hover { background: var(--terracotta-2); }
+
+/* ── TOAST ── */
+#toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--ink); color: var(--paper); padding: 8px 18px; border-radius: 999px; font-size: 12px; font-weight: 500; z-index: 9999; pointer-events: none; white-space: nowrap; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+#toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ── CONFIG CALQUES ── -->
+<div id="screen-config">
+  <div id="cfg-header">
+    <div>
+      <h2 id="cfg-title">{{ patron_nom }}</h2>
+      <p id="cfg-subtitle">Chargement…</p>
+    </div>
+    <a href="{{ url_for('detail', slug=slug) }}" class="btn">← Patron</a>
+  </div>
+  <div id="cfg-body">
+    <div id="proj-section" class="cfg-section">
+      <div class="cfg-section-title">Surface de projection</div>
+      <div class="proj-row">
+        <label>Largeur</label>
+        <input type="number" class="dim-in" id="cfg-pw" value="120">
+        <span>cm</span>
+        <label>Hauteur</label>
+        <input type="number" class="dim-in" id="cfg-ph" value="90">
+        <span>cm</span>
+      </div>
+    </div>
+    <div id="size-section" class="cfg-section" style="display:none">
+      <div class="cfg-section-title">Taille — sélectionne une taille</div>
+      <div class="layers-grid" id="size-grid"></div>
+    </div>
+    <div id="extra-section" class="cfg-section" style="display:none">
+      <div class="cfg-section-title">Calques optionnels</div>
+      <div class="layers-grid" id="extra-grid"></div>
+    </div>
+    <div id="no-layers-msg" class="cfg-section" style="display:none;font-family:var(--display);font-style:italic;font-size:15px;color:var(--muted);line-height:1.8">
+      Ce PDF n'a pas de calques détectés. Il sera affiché tel quel.
+    </div>
+  </div>
+  <div id="cfg-footer">
+    <div id="cfg-summary"></div>
+    <button class="btn primary" onclick="startApp()">Commencer →</button>
+  </div>
+</div>
+
+<!-- ── APPLICATION ── -->
+<div id="screen-app">
+  <div id="toolbar">
+    <div id="mode-pill" class="cut">✂ Découpage</div>
+    <div class="tsep"></div>
+
+    <div id="tb-cut" style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+      <button class="tbtn" onclick="goConfig()">⚙ Config</button>
+      <div class="tsep"></div>
+      <button class="tbtn" id="btn-draw-mode" onclick="toggleDrawMode()" title="Pan / Dessin — [D] bascule · [Espace] pan temporaire">✋ Pan</button>
+      <div class="tsep"></div>
+      <span class="tlbl">Zoom</span>
+      <button class="tbtn" onclick="czoom(1.25)" title="Zoom avant">+ Zoom</button>
+      <button class="tbtn" onclick="czoom(0.8)" title="Zoom arrière">- Zoom</button>
+      <button class="tbtn" onclick="cfit()" title="Ajuster à l'écran">Ajuster</button>
+      <div class="tsep"></div>
+      <button class="tbtn blue-btn" onclick="goPlace()">Placer →</button>
+    </div>
+
+    <div id="tb-place" style="display:none;align-items:center;gap:5px;flex-shrink:0">
+      <button class="tbtn" onclick="goCut()">← Découper</button>
+      <div class="tsep"></div>
+      <button class="tbtn" onclick="openCalib()" title="Calibrer le projecteur">🎯 Calibrer</button>
+      <div class="tsep"></div>
+      <span class="tlbl">Zoom</span>
+      <button class="tbtn" onclick="pzoom(1.2)" title="Zoom avant">+ Zoom</button>
+      <button class="tbtn" onclick="pzoom(0.8)" title="Zoom arrière">- Zoom</button>
+      <button class="tbtn" onclick="pfit()" title="Ajuster à l'écran">Ajuster</button>
+      <div class="tsep"></div>
+      <span class="tlbl">Surface projecteur</span>
+      <input class="tb-dim" id="pw" type="number" value="120"
+        onkeydown="if(event.key==='Enter'){updateProj();this.blur()}"
+        title="Largeur en cm"> ×
+      <input class="tb-dim" id="ph" type="number" value="90"
+        onkeydown="if(event.key==='Enter'){updateProj();this.blur()}"
+        title="Hauteur en cm"> cm
+      <button class="tbtn" onclick="updateProj()" title="Appliquer les dimensions">Appliquer</button>
+      <div class="tsep"></div>
+      <span class="tlbl">Canvas</span>
+      <button class="tbtn danger" onclick="clearPieces()" title="Retirer toutes les pièces du canvas">Tout retirer</button>
+      <div class="tsep"></div>
+      <button class="tbtn" onclick="togglePanel()">Pièces</button>
+    </div>
+  </div>
+
+  <div id="app-body">
+    <div id="cut-view">
+      <div id="cut-wrap">
+        <div id="svg-container"></div>
+        <div id="draw-rect"></div>
+      </div>
+      <div id="cut-panel">
+        <div id="cp-head">
+          <span>Zones (<span id="zcount">0</span>)</span>
+          <span style="cursor:pointer;font-size:11px;color:var(--dim)" onclick="clearZones()">Effacer</span>
+        </div>
+        <div id="cp-hint">✏️ Dessine un rectangle autour de chaque pièce</div>
+        <div id="zones-list"></div>
+        <div id="cp-foot">
+          <button class="tbtn blue-btn" style="width:100%" onclick="goPlace()">Placer les pièces →</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="place-view">
+      <div id="place-wrap">
+        <div id="place-canvas">
+          <div id="proj-zone" data-label=""></div>
+        </div>
+      </div>
+      <div id="place-panel">
+        <div id="pp-tog" onclick="togglePanel()">Pièces</div>
+        <div id="pp-head">Pièces à placer</div>
+        <div id="pp-list"></div>
+        <div id="sel-area">
+          <div id="sel-none">Appuie sur une pièce pour la sélectionner</div>
+          <div id="sel-info">
+            <div id="sel-name"></div>
+            <div id="sel-sub"></div>
+            <div class="rrow">
+              <div class="rm" onclick="rotS(-15)">↺</div>
+              <div class="rm" onclick="rotS(-90)" style="font-size:9px">-90°</div>
+              <span id="rval">0°</span>
+              <div class="rm" onclick="rotS(90)" style="font-size:9px">+90°</div>
+              <div class="rm" onclick="rotS(15)">↻</div>
+            </div>
+            <button class="ab" onclick="flipS()">⇆ Miroir</button>
+            <button class="ab rm-btn" onclick="removeS()">✕ Retirer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CALIBRATION (étape 1 seulement) ── -->
+<div id="screen-calib">
+  <div id="calib-canvas">
+    <div id="calib-view">
+      <div id="calib-grid"></div>
+    </div>
+  </div>
+  <div class="calib-handle" data-idx="0"></div>
+  <div class="calib-handle" data-idx="1"></div>
+  <div class="calib-handle" data-idx="2"></div>
+  <div class="calib-handle" data-idx="3"></div>
+
+  <div id="calib-ui">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <div class="cu-label">Carré de référence 5×5 cm</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px">Ajuste jusqu'à ce que le carré orange mesure exactement 5×5 cm sur ta table</div>
+      </div>
+      <div id="calib-sep"></div>
+      <div class="cu-label">Échelle</div>
+      <input type="range" class="calib-slider" id="scale-slider" min="10" max="400" value="100" step="1" oninput="onScaleSlider(this.value)">
+      <input type="number" id="scale-input" value="100" min="10" max="400" step="1"
+        style="width:60px;font-family:'DM Mono',monospace;font-size:13px;padding:4px 6px;border:1px solid rgba(255,255,255,0.25);border-radius:4px;background:rgba(255,255,255,0.1);color:white;text-align:center;"
+        oninput="onScaleInput(this.value)"> %
+      <div id="calib-sep2" style="width:1px;height:30px;background:rgba(255,255,255,0.15)"></div>
+      <button class="calib-btn" onclick="calibFitAll()" title="Recadre la vue pour voir les 4 poignées (ne change pas l'échelle)">⊞ Voir tout</button>
+      <button class="calib-btn" onclick="resetKeystone()" title="Remet les 4 coins à leur position par défaut">↺ Keystone</button>
+      <button class="calib-btn ok" onclick="applyCalib()">✓ Appliquer</button>
+      <button class="calib-btn" onclick="closeCalib()">Annuler</button>
+    </div>
+    <div style="display:flex;gap:24px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px">
+      <span style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.4px">● Coins orange → corriger keystone</span>
+      <span style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.4px">Glisser / Molette → navigation seulement (n'affecte pas l'échelle)</span>
+      <span style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.4px">Double-clic → recentrer · <span style="color:rgba(255,200,80,0.6)">Shift+double-clic → tout voir</span></span>
+    </div>
+  </div>
+</div>
+
+<div id="loading"><div class="spinner"></div><div id="loading-msg">Chargement…</div></div>
+<div id="modal"><div class="mbox"><h3>Nommer la pièce</h3><p>Donne un nom à cette zone</p><input type="text" id="minput" placeholder="ex: Jambe devant…"><div class="mbtns"><button class="mbtn" onclick="cancelM()">Annuler</button><button class="mbtn ok" onclick="confirmM()">OK</button></div></div></div>
+<div id="toast"></div>
+
+<script>
+// ── CONTEXTE (injecté par Flask) ──
+const PROJ_BASE = '/patron/{{ slug }}/projection/{{ cible }}';
+
+// ── ÉTAT ──
+let patronInfo = null;
+let currentSvg = null;
+let currentLayers = '';
+let patronTexts = [];
+let svgW = 14337, svgH = 9260;
+let cScale = 1, cPanX = 0, cPanY = 0;
+let drawModeActive = false;
+let tempPanActive = false; // vrai quand Espace est maintenu pour pan temporaire
+
+function setDrawMode(active) {
+  drawModeActive = active;
+  const btn = document.getElementById('btn-draw-mode');
+  const wrap = document.getElementById('cut-wrap');
+  if (drawModeActive) {
+    btn.textContent = '✏️ Dessin'; btn.classList.add('active');
+    wrap.style.cursor = 'crosshair';
+  } else {
+    btn.textContent = '✋ Pan'; btn.classList.remove('active');
+    wrap.style.cursor = 'grab';
+  }
+}
+
+function toggleDrawMode() {
+  setDrawMode(!drawModeActive);
+}
+
+// Raccourcis clavier : D = bascule, Espace maintenu = pan temporaire
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (document.getElementById('screen-app').style.display === 'none') return;
+  if (document.getElementById('cut-view').style.display === 'none') return;
+
+  if (e.code === 'Space' && !e.repeat) {
+    e.preventDefault();
+    if (drawModeActive && !tempPanActive) {
+      tempPanActive = true;
+      setDrawMode(false);
+    }
+  } else if (e.code === 'KeyD' && !e.repeat) {
+    toggleDrawMode();
+  }
+});
+
+document.addEventListener('keyup', e => {
+  if (e.code === 'Space' && tempPanActive) {
+    tempPanActive = false;
+    setDrawMode(true);
+  }
+});
+
+async function fetchAndApplySVG() {
+  showLoading('Rendu SVG vectoriel…');
+  const res  = await fetch(PROJ_BASE + '/svg?layers=' + currentLayers);
+  const data = await res.json();
+  hideLoading();
+  currentSvg = data;
+  svgW = data.page_w_pts;
+  svgH = data.page_h_pts;
+
+  const container = document.getElementById('svg-container');
+  container.innerHTML = data.svg;
+  const svgEl = container.querySelector('svg');
+  if (svgEl) {
+    svgEl.style.width  = svgW + 'px';
+    svgEl.style.height = svgH + 'px';
+    svgEl.style.pointerEvents = 'none';
+  }
+
+  fetchPatronTexts();
+}
+
+async function fetchPatronTexts() {
+  const instrLayer = patronInfo && patronInfo.extras
+    ? patronInfo.extras.find(e => e.name.toLowerCase().includes('instruction'))
+    : null;
+  if (!instrLayer) return;
+  try {
+    const res = await fetch(PROJ_BASE + '/texts?layers=' + instrLayer.xref);
+    const data = await res.json();
+    patronTexts = data.texts || [];
+  } catch(e) { console.warn('Textes non chargés', e); }
+}
+
+function findClosestText(svgX, svgY, svgRW, svgRH) {
+  const cx = svgX + svgRW / 2, cy = svgY + svgRH / 2;
+  let best = null, bestDist = Infinity;
+  const margin = Math.max(svgRW, svgRH) * 0.5;
+  for (const t of patronTexts) {
+    if (t.x < svgX - margin || t.x > svgX + svgRW + margin) continue;
+    if (t.y < svgY - margin || t.y > svgY + svgRH + margin) continue;
+    const d = Math.sqrt((t.x - cx) ** 2 + (t.y - cy) ** 2);
+    if (d < bestDist) { bestDist = d; best = t; }
+  }
+  return best ? best.text : null;
+}
+let selectedLayers = { sizes: [], extras: [] };
+let zones = [], zCounter = 0;
+let pieces = [], pCounter = 0, selected = null;
+let pZoom = 1, pPanX = 40, pPanY = 40;
+let panelOpen = true;
+let mResolve = null;
+const PPcm = 4;
+
+// ── ÉCRAN CONFIG ──
+function showConfig() {
+  show('screen-config');
+  document.getElementById('cfg-subtitle').textContent =
+    `${patronInfo.page_w_cm} × ${patronInfo.page_h_cm} cm · ${patronInfo.sizes.length} taille(s) · ${patronInfo.extras.length} calque(s) extra`;
+
+  selectedLayers = { sizes: [], extras: [] };
+
+  const sg = document.getElementById('size-grid'); sg.innerHTML = '';
+  if (patronInfo.sizes.length > 0) {
+    document.getElementById('size-section').style.display = 'block';
+    patronInfo.sizes.forEach(s => {
+      const card = mkLayerCard(s.name, true, false);
+      card.addEventListener('click', () => {
+        const alreadySel = card.classList.contains('sel');
+        sg.querySelectorAll('.layer-card').forEach(c => {
+          c.classList.remove('sel');
+          c.querySelector('.lc-check').textContent = '';
+        });
+        if (!alreadySel) {
+          card.classList.add('sel');
+          card.querySelector('.lc-check').textContent = '✓';
+          selectedLayers.sizes = [s.xref];
+        } else {
+          selectedLayers.sizes = [];
+        }
+        updateCfgSummary();
+      });
+      sg.appendChild(card);
+    });
+    const mid = sg.children[Math.floor(sg.children.length / 2)];
+    if (mid) mid.click();
+  } else {
+    document.getElementById('size-section').style.display = 'none';
+  }
+
+  const eg = document.getElementById('extra-grid'); eg.innerHTML = '';
+  if (patronInfo.extras.length > 0) {
+    document.getElementById('extra-section').style.display = 'block';
+    patronInfo.extras.forEach(s => {
+      const card = mkLayerCard(s.name, false, s.on);
+      card.addEventListener('click', () => {
+        const active = card.classList.toggle('sel');
+        card.querySelector('.lc-check').textContent = active ? '✓' : '';
+        if (active) selectedLayers.extras.push(s.xref);
+        else selectedLayers.extras = selectedLayers.extras.filter(x => x !== s.xref);
+        updateCfgSummary();
+      });
+      if (s.on) { card.classList.add('sel'); selectedLayers.extras.push(s.xref); }
+      eg.appendChild(card);
+    });
+  } else {
+    document.getElementById('extra-section').style.display = 'none';
+  }
+
+  document.getElementById('no-layers-msg').style.display = patronInfo.has_layers ? 'none' : 'block';
+  updateCfgSummary();
+}
+
+function mkLayerCard(name, isSize, active) {
+  const card = document.createElement('div');
+  card.className = 'layer-card' + (isSize ? ' size' : '') + (active ? ' sel' : '');
+  card.innerHTML = `<div class="lc-check">${active ? '✓' : ''}</div><div class="lc-name">${name}</div>`;
+  return card;
+}
+
+function updateCfgSummary() {
+  const total = selectedLayers.sizes.length + selectedLayers.extras.length;
+  document.getElementById('cfg-summary').textContent =
+    total === 0 ? 'Aucun calque sélectionné' : `${total} calque(s) actif(s)`;
+}
+
+async function startApp() {
+  const allXrefs = [...selectedLayers.sizes, ...selectedLayers.extras].join(',');
+  currentLayers = allXrefs;
+  const pw = document.getElementById('cfg-pw').value;
+  const ph = document.getElementById('cfg-ph').value;
+  document.getElementById('pw').value = pw;
+  document.getElementById('ph').value = ph;
+
+  showLoading('Rendu du patron…');
+  await fetchAndApplySVG();
+  hideLoading();
+
+  show('screen-app');
+  zones = []; zCounter = 0; pieces = []; pCounter = 0; selected = null;
+  renderZonesList();
+  showCutMode();
+  setupCutInteraction();
+  setTimeout(cfit, 80);
+}
+
+function goConfig() { showConfig(); show('screen-config'); }
+
+// ── MODES ──
+function showCutMode() {
+  document.getElementById('cut-view').style.display = 'flex';
+  document.getElementById('cut-panel').style.display = 'flex';
+  document.getElementById('place-view').style.display = 'none';
+  document.getElementById('tb-cut').style.display = 'flex';
+  document.getElementById('tb-place').style.display = 'none';
+  document.getElementById('mode-pill').className = 'cut';
+  document.getElementById('mode-pill').textContent = '✂ Découpage';
+  applyImgT();
+}
+
+function goCut() { showCutMode(); setupCutInteraction(); applyImgT(); }
+
+function goPlace() {
+  if (zones.length === 0) { toast('Découpe d\'abord au moins une pièce !'); return; }
+  document.getElementById('cut-view').style.display = 'none';
+  document.getElementById('cut-panel').style.display = 'none';
+  document.getElementById('place-view').style.display = 'block';
+  document.getElementById('tb-cut').style.display = 'none';
+  document.getElementById('tb-place').style.display = 'flex';
+  document.getElementById('mode-pill').className = 'place';
+  document.getElementById('mode-pill').textContent = '⊞ Placement';
+  renderPieceList();
+  setupPlaceInteraction();
+  updateProj();
+  pfit();
+}
+
+// ── ZOOM/PAN DÉCOUPAGE ──
+function applyImgT() {
+  document.getElementById('svg-container').style.transform =
+    `translate(${cPanX}px,${cPanY}px) scale(${cScale})`;
+  renderCutOverlays();
+}
+
+function cfit() {
+  const wrap = document.getElementById('cut-wrap');
+  cScale = Math.min((wrap.offsetWidth - 20) / svgW, (wrap.offsetHeight - 20) / svgH) * 0.95;
+  cPanX = (wrap.offsetWidth - svgW * cScale) / 2;
+  cPanY = 15;
+  applyImgT();
+}
+
+function czoom(f) {
+  const wrap = document.getElementById('cut-wrap');
+  const cx = wrap.offsetWidth / 2, cy = wrap.offsetHeight / 2, old = cScale;
+  cScale = Math.max(0.00003, Math.min(3, cScale * f));
+  cPanX -= (cx - cPanX) * (cScale / old - 1);
+  cPanY -= (cy - cPanY) * (cScale / old - 1);
+  applyImgT();
+}
+
+// ── DESSIN RECTANGLES + PAN ──
+let drawing = false, drawStart = null, ptrMap = {};
+let panning = false, panPtr = null, panStartX, panStartY, panStartPX, panStartPY;
+
+function setupCutInteraction() {
+  const wrap = document.getElementById('cut-wrap');
+  const nw = wrap.cloneNode(false);
+  [...wrap.children].forEach(c => nw.appendChild(c));
+  wrap.parentNode.replaceChild(nw, wrap);
+  const dr = document.getElementById('draw-rect');
+
+  nw.addEventListener('pointerdown', e => {
+    ptrMap[e.pointerId] = {x: e.clientX, y: e.clientY};
+    if (Object.keys(ptrMap).length >= 2) { drawing = false; panning = false; dr.style.display = 'none'; return; }
+    nw.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    if (drawModeActive) {
+      const r = nw.getBoundingClientRect();
+      drawStart = {x: e.clientX - r.left, y: e.clientY - r.top};
+      drawing = true;
+      dr.style.display = 'block';
+      dr.style.left = drawStart.x + 'px'; dr.style.top = drawStart.y + 'px';
+      dr.style.width = '0'; dr.style.height = '0';
+    } else {
+      panning = true; panPtr = e.pointerId;
+      panStartX = e.clientX; panStartY = e.clientY;
+      panStartPX = cPanX; panStartPY = cPanY;
+      nw.style.cursor = 'grabbing';
+    }
+  });
+
+  nw.addEventListener('pointermove', e => {
+    ptrMap[e.pointerId] = {x: e.clientX, y: e.clientY};
+    if (Object.keys(ptrMap).length >= 2) return;
+    if (drawing && drawStart) {
+      const r = nw.getBoundingClientRect();
+      const x = e.clientX - r.left, y = e.clientY - r.top;
+      dr.style.left = Math.min(x, drawStart.x) + 'px';
+      dr.style.top  = Math.min(y, drawStart.y) + 'px';
+      dr.style.width  = Math.abs(x - drawStart.x) + 'px';
+      dr.style.height = Math.abs(y - drawStart.y) + 'px';
+      e.preventDefault();
+    } else if (panning && e.pointerId === panPtr) {
+      cPanX = panStartPX + (e.clientX - panStartX);
+      cPanY = panStartPY + (e.clientY - panStartY);
+      applyImgT();
+    }
+  });
+
+  nw.addEventListener('pointerup', async e => {
+    delete ptrMap[e.pointerId];
+    nw.style.cursor = drawModeActive ? 'crosshair' : 'grab';
+    if (panning && e.pointerId === panPtr) { panning = false; panPtr = null; return; }
+    if (!drawing || !drawStart) return;
+    drawing = false; dr.style.display = 'none';
+    const r = nw.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    const rx = Math.min(x, drawStart.x), ry = Math.min(y, drawStart.y);
+    const rw = Math.abs(x - drawStart.x), rh = Math.abs(y - drawStart.y);
+    drawStart = null;
+    if (rw < 12 || rh < 12) return;
+    const svgX = (rx - cPanX) / cScale;
+    const svgY = (ry - cPanY) / cScale;
+    const svgRW = rw / cScale;
+    const svgRH = rh / cScale;
+    const ptToCm = 1 / 28.35;
+    const w_cm = parseFloat((svgRW * ptToCm).toFixed(1));
+    const h_cm = parseFloat((svgRH * ptToCm).toFixed(1));
+    const suggested = findClosestText(svgX, svgY, svgRW, svgRH) || ('Pièce ' + (zCounter + 1));
+    const name = await askName(suggested);
+    if (!name) return;
+    const thumbUrl = makeSvgThumb(svgX, svgY, svgRW, svgRH);
+    zones.push({id: ++zCounter, name, svgX, svgY, svgRW, svgRH, w_cm, h_cm, thumbUrl});
+    renderZonesList(); renderCutOverlays();
+    toast('"' + name + '" découpée (' + w_cm + '×' + h_cm + ' cm)');
+  });
+
+  nw.addEventListener('pointercancel', e => {
+    delete ptrMap[e.pointerId]; drawing = false; panning = false; dr.style.display = 'none';
+  });
+
+  nw.addEventListener('wheel', e => {
+    e.preventDefault(); czoom(e.deltaY < 0 ? 1.15 : 0.87);
+  }, {passive: false});
+
+  let ld = null, lm = null;
+  nw.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) { ld = td(e); lm = tm(e, nw.getBoundingClientRect()); }
+  }, {passive: true});
+  nw.addEventListener('touchmove', e => {
+    if (e.touches.length === 2) {
+      const d = td(e), m = tm(e, nw.getBoundingClientRect());
+      if (ld) {
+        const f = d / ld, o = cScale;
+        cScale = Math.max(0.00003, Math.min(3, cScale * f));
+        cPanX += m.x - lm.x - (m.x - cPanX) * (cScale / o - 1);
+        cPanY += m.y - lm.y - (m.y - cPanY) * (cScale / o - 1);
+        applyImgT();
+      }
+      ld = d; lm = m;
+    }
+  }, {passive: true});
+  nw.addEventListener('touchend', () => ld = null);
+}
+
+function makeSvgThumb(svgX, svgY, svgRW, svgRH) {
+  const srcSvg = document.querySelector('#svg-container svg');
+  if (!srcSvg) return null;
+  const inner = new XMLSerializer().serializeToString(srcSvg);
+  const cropped = inner
+    .replace(/width="[^"]*"/, 'width="72"')
+    .replace(/height="[^"]*"/, 'height="56"')
+    .replace(/viewBox="[^"]*"/, `viewBox="${svgX} ${svgY} ${svgRW} ${svgRH}"`);
+  const blob = new Blob([cropped], {type: 'image/svg+xml'});
+  return URL.createObjectURL(blob);
+}
+
+function td(e){const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;return Math.sqrt(dx*dx+dy*dy);}
+function tm(e,r){return{x:(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,y:(e.touches[0].clientY+e.touches[1].clientY)/2-r.top};}
+
+function renderCutOverlays() {
+  document.querySelectorAll('.cut-zone').forEach(el => el.remove());
+  const wrap = document.getElementById('cut-wrap');
+  zones.forEach(z => makeCutZoneEl(z, wrap));
+}
+
+function makeCutZoneEl(z, wrap) {
+  const el = document.createElement('div');
+  el.className = 'cut-zone';
+  el.dataset.zid = z.id;
+  updateCutZonePos(el, z);
+  const lbl = document.createElement('div'); lbl.className = 'cz-lbl'; lbl.textContent = z.name;
+  const del = document.createElement('div'); del.className = 'cz-del'; del.textContent = '✕';
+  del.addEventListener('pointerdown', e => { e.stopPropagation(); deleteZone(z.id); });
+  el.appendChild(lbl); el.appendChild(del);
+  ['nw','ne','sw','se'].forEach(corner => {
+    const h = document.createElement('div');
+    h.className = `cz-handle ${corner}`;
+    setupResizeHandle(h, corner, z, el);
+    el.appendChild(h);
+  });
+  setupZoneDrag(el, z);
+  wrap.appendChild(el);
+}
+
+function updateCutZonePos(el, z) {
+  el.style.left   = (z.svgX * cScale + cPanX) + 'px';
+  el.style.top    = (z.svgY * cScale + cPanY) + 'px';
+  el.style.width  = (z.svgRW * cScale) + 'px';
+  el.style.height = (z.svgRH * cScale) + 'px';
+}
+
+function setupZoneDrag(el, z) {
+  let drag = false, pid = null, sx, sy, ox, oy;
+  el.addEventListener('pointerdown', e => {
+    if (e.target.classList.contains('cz-handle') || e.target.classList.contains('cz-del')) return;
+    drag = true; pid = e.pointerId;
+    el.setPointerCapture(e.pointerId);
+    sx = e.clientX; sy = e.clientY;
+    ox = z.svgX; oy = z.svgY;
+    e.stopPropagation();
+  });
+  el.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== pid) return;
+    z.svgX = ox + (e.clientX - sx) / cScale;
+    z.svgY = oy + (e.clientY - sy) / cScale;
+    updateCutZonePos(el, z);
+  });
+  el.addEventListener('pointerup', e => {
+    if (e.pointerId !== pid) return;
+    drag = false;
+    updateZoneDims(z);
+  });
+}
+
+function setupResizeHandle(h, corner, z, el) {
+  let drag = false, pid = null, sx, sy, ox, oy, ow, oh;
+  h.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    drag = true; pid = e.pointerId;
+    h.setPointerCapture(e.pointerId);
+    sx = e.clientX; sy = e.clientY;
+    ox = z.svgX; oy = z.svgY; ow = z.svgRW; oh = z.svgRH;
+  });
+  h.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== pid) return;
+    const dx = (e.clientX - sx) / cScale;
+    const dy = (e.clientY - sy) / cScale;
+    if (corner === 'nw') { z.svgX = ox+dx; z.svgY = oy+dy; z.svgRW = Math.max(20, ow-dx); z.svgRH = Math.max(20, oh-dy); }
+    if (corner === 'ne') { z.svgY = oy+dy; z.svgRW = Math.max(20, ow+dx); z.svgRH = Math.max(20, oh-dy); }
+    if (corner === 'sw') { z.svgX = ox+dx; z.svgRW = Math.max(20, ow-dx); z.svgRH = Math.max(20, oh+dy); }
+    if (corner === 'se') { z.svgRW = Math.max(20, ow+dx); z.svgRH = Math.max(20, oh+dy); }
+    updateCutZonePos(el, z);
+  });
+  h.addEventListener('pointerup', e => {
+    if (e.pointerId !== pid) return;
+    drag = false;
+    updateZoneDims(z);
+  });
+}
+
+function updateZoneDims(z) {
+  const ptToCm = 1 / 28.35;
+  z.w_cm = parseFloat((z.svgRW * ptToCm).toFixed(1));
+  z.h_cm = parseFloat((z.svgRH * ptToCm).toFixed(1));
+  renderZonesList();
+}
+function renderZonesList() {
+  const list = document.getElementById('zones-list');
+  document.getElementById('zcount').textContent = zones.length;
+  list.innerHTML = '';
+  zones.forEach(z => {
+    const div = document.createElement('div'); div.className = 'zone-item';
+    const thumb = z.thumbUrl
+      ? `<img class="zi-thumb" src="${z.thumbUrl}">`
+      : `<div style="width:36px;height:28px;background:var(--paper2);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">✂</div>`;
+    div.innerHTML = `${thumb}<div style="flex:1"><div class="zi-name">${z.name}</div><div class="zi-dims">${z.w_cm}×${z.h_cm}cm</div></div><span class="zi-del">✕</span>`;
+    div.querySelector('.zi-del').addEventListener('click', () => deleteZone(z.id));
+    list.appendChild(div);
+  });
+}
+function deleteZone(id){zones=zones.filter(z=>z.id!==id);renderZonesList();renderCutOverlays();}
+function clearZones(){zones=[];renderZonesList();renderCutOverlays();toast('Zones effacées');}
+
+// ── MODAL ──
+function askName(def){return new Promise(res=>{document.getElementById('minput').value=def;document.getElementById('modal').classList.add('show');mResolve=res;setTimeout(()=>document.getElementById('minput').focus(),60);document.getElementById('minput').onkeydown=e=>{if(e.key==='Enter')confirmM();if(e.key==='Escape')cancelM();};});}
+function confirmM(){const v=document.getElementById('minput').value.trim()||'Pièce '+zCounter;document.getElementById('modal').classList.remove('show');if(mResolve){mResolve(v);mResolve=null;}}
+function cancelM(){document.getElementById('modal').classList.remove('show');if(mResolve){mResolve(null);mResolve=null;}}
+
+// ── PLACEMENT ──
+function updateProj(){const w=parseFloat(document.getElementById('pw').value)||120,h=parseFloat(document.getElementById('ph').value)||90,z=document.getElementById('proj-zone');z.style.left=pPanX+'px';z.style.top=pPanY+'px';z.style.width=(w*PPcm*pZoom)+'px';z.style.height=(h*PPcm*pZoom)+'px';z.setAttribute('data-label',w+' × '+h+' cm');}
+function pfit(){const w=parseFloat(document.getElementById('pw').value)||120,h=parseFloat(document.getElementById('ph').value)||90,wrap=document.getElementById('place-wrap'),avW=wrap.offsetWidth-(panelOpen?230:0)-80,avH=wrap.offsetHeight-80;pZoom=Math.min(avW/(w*PPcm),avH/(h*PPcm));pPanX=40;pPanY=40;updateProj();pieces.forEach(p=>{updPos(p);resizeP(p);});}
+function pzoom(f){const wrap=document.getElementById('place-wrap'),cx=wrap.offsetWidth/2,cy=wrap.offsetHeight/2,old=pZoom;pZoom=Math.max(0.05,Math.min(10,pZoom*f));pPanX-=(cx-pPanX)*(pZoom/old-1);pPanY-=(cy-pPanY)*(pZoom/old-1);updateProj();pieces.forEach(p=>{updPos(p);resizeP(p);});}
+
+let ppPtrs={}, ppBg=false;
+function setupPlaceInteraction(){
+  const wrap=document.getElementById('place-wrap');
+  const nw=wrap.cloneNode(false);[...wrap.children].forEach(c=>nw.appendChild(c));wrap.parentNode.replaceChild(nw,wrap);
+  nw.addEventListener('pointerdown',e=>{
+    ppPtrs[e.pointerId]={x:e.clientX,y:e.clientY};
+    const onBg=e.target===nw||e.target.id==='place-canvas'||e.target.id==='proj-zone';
+    if(onBg){deselAll();ppBg=true;nw.style.cursor='grabbing';nw.setPointerCapture(e.pointerId);}
+  });
+  nw.addEventListener('pointermove',e=>{
+    if(!ppPtrs[e.pointerId])return;
+    const n=Object.keys(ppPtrs).length;
+    if(n>=2||(n===1&&ppBg)){
+      const dx=e.clientX-ppPtrs[e.pointerId].x,dy=e.clientY-ppPtrs[e.pointerId].y;
+      pPanX+=(n>=2?dx/2:dx);pPanY+=(n>=2?dy/2:dy);
+      ppPtrs[e.pointerId]={x:e.clientX,y:e.clientY};
+      updateProj();pieces.forEach(updPos);
+    }
+    ppPtrs[e.pointerId]={x:e.clientX,y:e.clientY};
+  });
+  nw.addEventListener('pointerup',e=>{delete ppPtrs[e.pointerId];if(!Object.keys(ppPtrs).length){ppBg=false;nw.style.cursor='grab';}});
+  nw.addEventListener('pointercancel',e=>{delete ppPtrs[e.pointerId];if(!Object.keys(ppPtrs).length){ppBg=false;nw.style.cursor='grab';}});
+  nw.addEventListener('wheel',e=>{e.preventDefault();pzoom(e.deltaY<0?1.1:0.9);},{passive:false});
+  let ld2=null,lm2=null;
+  nw.addEventListener('touchstart',e=>{if(e.touches.length===2){ld2=td(e);lm2=tm(e,nw.getBoundingClientRect());}},{passive:true});
+  nw.addEventListener('touchmove',e=>{if(e.touches.length===2){const d=td(e),m=tm(e,nw.getBoundingClientRect());if(ld2){const f=d/ld2,o=pZoom;pZoom=Math.max(0.05,Math.min(10,pZoom*f));pPanX+=m.x-lm2.x-(m.x-pPanX)*(pZoom/o-1);pPanY+=m.y-lm2.y-(m.y-pPanY)*(pZoom/o-1);updateProj();pieces.forEach(p=>{updPos(p);resizeP(p);});}ld2=d;lm2=m;}},{passive:true});
+  nw.addEventListener('touchend',()=>ld2=null);
+}
+
+function renderPieceList() {
+  const list = document.getElementById('pp-list'); list.innerHTML = '';
+  zones.forEach(z => {
+    const div = document.createElement('div');
+    div.className = 'pp-item'; div.id = 'pp-' + z.id;
+    const thumb = z.thumbUrl
+      ? `<img class="pp-thumb" src="${z.thumbUrl}">`
+      : `<div style="width:36px;height:28px;background:var(--paper2);border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px">✂</div>`;
+    div.innerHTML = `${thumb}<div><div class="pp-name">${z.name}</div><div class="pp-dims">${z.w_cm}×${z.h_cm}cm</div></div>`;
+    div.addEventListener('click', () => addPiece(z));
+    list.appendChild(div);
+  });
+}
+
+function addPiece(zone) {
+  const canvas = document.getElementById('place-canvas'), id = ++pCounter;
+  const p = {
+    id, zoneId: zone.id, label: zone.name,
+    w_cm: zone.w_cm, h_cm: zone.h_cm,
+    svgX: zone.svgX, svgY: zone.svgY, svgRW: zone.svgRW, svgRH: zone.svgRH,
+    x: 5 + (pieces.length % 3) * 18, y: 5 + Math.floor(pieces.length / 3) * 18,
+    rotation: 0, flipped: false, el: null
+  };
+  const el = document.createElement('div');
+  el.className = 'piece'; el.style.zIndex = 100 + id;
+  const rh = document.createElement('div'); rh.className = 'rot-h'; rh.textContent = '↻';
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svgEl = document.createElementNS(svgNS, 'svg');
+  svgEl.setAttribute('viewBox', `${zone.svgX} ${zone.svgY} ${zone.svgRW} ${zone.svgRH}`);
+  svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  svgEl.style.width = '100%'; svgEl.style.height = '100%';
+  svgEl.style.display = 'block'; svgEl.style.pointerEvents = 'none';
+  const srcSvg = document.querySelector('#svg-container svg');
+  if (srcSvg) { [...srcSvg.children].forEach(child => svgEl.appendChild(child.cloneNode(true))); }
+  const lbl = document.createElement('div'); lbl.className = 'piece-lbl'; lbl.textContent = zone.name;
+  el.appendChild(rh); el.appendChild(svgEl); el.appendChild(lbl);
+  canvas.appendChild(el);
+  p.el = el; pieces.push(p);
+  updPos(p); resizeP(p); setupDrag(p); setupRot(p, rh);
+  el.addEventListener('pointerdown', e => {
+    if (e.target === rh) return;
+    e.stopPropagation(); selPiece(p); p.el.style.zIndex = 100 + ++pCounter;
+  });
+  document.getElementById('pp-' + zone.id)?.classList.add('added');
+  selPiece(p); toast('"' + zone.name + '" ajoutée');
+}
+
+function updPos(p){p.el.style.left=(pPanX+p.x*PPcm*pZoom)+'px';p.el.style.top=(pPanY+p.y*PPcm*pZoom)+'px';}
+function resizeP(p){p.el.style.width=(p.w_cm*PPcm*pZoom)+'px';p.el.style.height=(p.h_cm*PPcm*pZoom)+'px';applyT(p);}
+function applyT(p){p.el.style.transform=`rotate(${p.rotation}deg) scaleX(${p.flipped?-1:1})`;}
+
+function setupDrag(p){let dr=false,pid=null,sx,sy,spx,spy;p.el.addEventListener('pointerdown',e=>{if(e.target.classList.contains('rot-h'))return;dr=true;pid=e.pointerId;p.el.setPointerCapture(e.pointerId);sx=e.clientX;sy=e.clientY;spx=p.x;spy=p.y;e.stopPropagation();});p.el.addEventListener('pointermove',e=>{if(!dr||e.pointerId!==pid)return;p.x=spx+(e.clientX-sx)/(PPcm*pZoom);p.y=spy+(e.clientY-sy)/(PPcm*pZoom);updPos(p);});p.el.addEventListener('pointerup',e=>{if(e.pointerId!==pid)return;dr=false;updSelInfo();});}
+function setupRot(p,h){let rot=false,sa=0,sr=0;h.addEventListener('pointerdown',e=>{e.stopPropagation();rot=true;h.setPointerCapture(e.pointerId);const r=p.el.getBoundingClientRect();sa=Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))*180/Math.PI;sr=p.rotation;});h.addEventListener('pointermove',e=>{if(!rot)return;const r=p.el.getBoundingClientRect();const a=Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))*180/Math.PI;p.rotation=Math.round(sr+a-sa);applyT(p);updSelInfo();});h.addEventListener('pointerup',()=>rot=false);}
+
+function selPiece(p){deselAll();selected=p;p.el.classList.add('selected');updSelInfo();}
+function deselAll(){if(selected)selected.el.classList.remove('selected');selected=null;document.getElementById('sel-none').style.display='block';document.getElementById('sel-info').style.display='none';}
+function updSelInfo(){if(!selected)return;document.getElementById('sel-none').style.display='none';document.getElementById('sel-info').style.display='block';document.getElementById('sel-name').textContent=selected.label;document.getElementById('sel-sub').textContent=selected.w_cm+'×'+selected.h_cm+' cm';document.getElementById('rval').textContent=selected.rotation+'°';}
+function rotS(d){if(!selected)return;selected.rotation=((selected.rotation+d)%360+360)%360;applyT(selected);updSelInfo();}
+function flipS(){if(!selected)return;selected.flipped=!selected.flipped;applyT(selected);}
+function removeS(){if(!selected)return;document.getElementById('pp-'+selected.zoneId)?.classList.remove('added');selected.el.remove();pieces=pieces.filter(p=>p.id!==selected.id);deselAll();}
+function clearPieces(){pieces.forEach(p=>p.el.remove());pieces=[];deselAll();renderPieceList();toast('Canvas vidé');}
+function togglePanel(){panelOpen=!panelOpen;document.getElementById('place-panel').classList.toggle('closed',!panelOpen);}
+
+// ── CALIBRATION (étape 1 : échelle uniquement) ──
+let calibScale = 1.0;
+let calibPanX = 0, calibPanY = 0, calibViewZoom = 1;
+let keystoneCorners = [{fx:0,fy:0},{fx:1,fy:0},{fx:1,fy:1},{fx:0,fy:1}];
+
+function applyCalibView() {
+  document.getElementById('calib-view').style.transform =
+    `translate(${calibPanX}px,${calibPanY}px) scale(${calibViewZoom})`;
+  updateCalibHandlePositions();
+}
+
+// ── KEYSTONE ──
+function gaussElim(A, b) {
+  const n = A.length;
+  const m = A.map((r, i) => [...r, b[i]]);
+  for (let c = 0; c < n; c++) {
+    let p = c;
+    for (let r = c+1; r < n; r++) if (Math.abs(m[r][c]) > Math.abs(m[p][c])) p = r;
+    [m[c], m[p]] = [m[p], m[c]];
+    if (Math.abs(m[c][c]) < 1e-12) continue;
+    for (let r = 0; r < n; r++) {
+      if (r === c) continue;
+      const f = m[r][c] / m[c][c];
+      for (let j = c; j <= n; j++) m[r][j] -= f * m[c][j];
+    }
+  }
+  return m.map((r, i) => r[n] / r[i]);
+}
+
+function computeHomo(src, dst) {
+  const A = [], b = [];
+  for (let i = 0; i < 4; i++) {
+    const {x: sx, y: sy} = src[i], {x: dx, y: dy} = dst[i];
+    A.push([sx, sy, 1, 0, 0, 0, -dx*sx, -dx*sy]); b.push(dx);
+    A.push([0, 0, 0, sx, sy, 1, -dy*sx, -dy*sy]); b.push(dy);
+  }
+  const h = gaussElim(A, b);
+  return [[h[0],h[1],h[2]],[h[3],h[4],h[5]],[h[6],h[7],1]];
+}
+
+function homoToCSS(H) {
+  return `matrix3d(${H[0][0]},${H[1][0]},0,${H[2][0]},${H[0][1]},${H[1][1]},0,${H[2][1]},0,0,1,0,${H[0][2]},${H[1][2]},0,${H[2][2]})`;
+}
+
+function isKeystoneIdentity() {
+  const def = [{fx:0,fy:0},{fx:1,fy:0},{fx:1,fy:1},{fx:0,fy:1}];
+  return !keystoneCorners.some(({fx,fy},i) => Math.abs(fx-def[i].fx)>0.001 || Math.abs(fy-def[i].fy)>0.001);
+}
+
+function updateCalibHandlePositions() {
+  const c = document.getElementById('calib-grid');
+  const offX = c._offX, offY = c._offY, gW = c._gridW, gH = c._gridH;
+  if (!gW || !gH) return;
+  document.querySelectorAll('.calib-handle').forEach((h, i) => {
+    const {fx, fy} = keystoneCorners[i];
+    h.style.left = (calibPanX + (offX + fx * gW) * calibViewZoom) + 'px';
+    h.style.top  = (calibPanY + (offY + fy * gH) * calibViewZoom) + 'px';
+  });
+}
+
+function updateCalibGridTransform() {
+  const c = document.getElementById('calib-grid');
+  const gW = c._gridW, gH = c._gridH;
+  if (!gW || !gH) return;
+  if (isKeystoneIdentity()) { c.style.transform = ''; return; }
+  const src = [{x:0,y:0},{x:gW,y:0},{x:gW,y:gH},{x:0,y:gH}];
+  const dst = keystoneCorners.map(({fx,fy}) => ({x:fx*gW, y:fy*gH}));
+  c.style.transform = homoToCSS(computeHomo(src, dst));
+}
+
+function resetKeystone() {
+  keystoneCorners = [{fx:0,fy:0},{fx:1,fy:0},{fx:1,fy:1},{fx:0,fy:1}];
+  updateCalibGridTransform();
+  updateCalibHandlePositions();
+}
+
+function setupKeystoneHandles() {
+  document.querySelectorAll('.calib-handle').forEach((handle, idx) => {
+    let dragging = false, startX, startY, startFX, startFY;
+    handle.addEventListener('pointerdown', e => {
+      e.preventDefault(); e.stopPropagation();
+      dragging = true;
+      handle.setPointerCapture(e.pointerId);
+      handle.classList.add('active');
+      startX = e.clientX; startY = e.clientY;
+      startFX = keystoneCorners[idx].fx;
+      startFY = keystoneCorners[idx].fy;
+    });
+    handle.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const c = document.getElementById('calib-grid');
+      const gW = c._gridW, gH = c._gridH;
+      if (!gW || !gH) return;
+      keystoneCorners[idx] = {
+        fx: startFX + (e.clientX - startX) / (calibViewZoom * gW),
+        fy: startFY + (e.clientY - startY) / (calibViewZoom * gH)
+      };
+      updateCalibGridTransform();
+      updateCalibHandlePositions();
+    });
+    handle.addEventListener('pointerup',     () => { dragging = false; handle.classList.remove('active'); });
+    handle.addEventListener('pointercancel', () => { dragging = false; handle.classList.remove('active'); });
+  });
+}
+
+function setupCalibInteraction() {
+  const view = document.getElementById('calib-view');
+  let dragging = false, dragPtrId = null, dragStartX, dragStartY, panStartX, panStartY;
+  view.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    dragging = true; dragPtrId = e.pointerId;
+    view.setPointerCapture(e.pointerId);
+    dragStartX = e.clientX; dragStartY = e.clientY;
+    panStartX = calibPanX; panStartY = calibPanY;
+    view.style.cursor = 'grabbing';
+  });
+  view.addEventListener('pointermove', e => {
+    if (!dragging || e.pointerId !== dragPtrId) return;
+    calibPanX = panStartX + (e.clientX - dragStartX);
+    calibPanY = panStartY + (e.clientY - dragStartY);
+    applyCalibView();
+  });
+  view.addEventListener('pointerup', e => {
+    if (e.pointerId !== dragPtrId) return;
+    dragging = false; view.style.cursor = 'grab';
+  });
+  view.addEventListener('pointercancel', () => { dragging = false; view.style.cursor = 'grab'; });
+  view.addEventListener('wheel', e => {
+    e.preventDefault();
+    const f = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+    const oldZ = calibViewZoom;
+    calibViewZoom = Math.max(0.3, Math.min(5, calibViewZoom * f));
+    calibPanX = e.clientX - (e.clientX - calibPanX) * (calibViewZoom / oldZ);
+    calibPanY = e.clientY - (e.clientY - calibPanY) * (calibViewZoom / oldZ);
+    applyCalibView();
+  }, {passive: false});
+  view.addEventListener('dblclick', e => {
+    if (e.shiftKey) calibFitAll();
+    else { calibPanX = 0; calibPanY = 0; calibViewZoom = 1; applyCalibView(); }
+  });
+}
+
+function calibFitAll() {
+  const c = document.getElementById('calib-grid');
+  const gW = c._gridW, gH = c._gridH, offX = c._offX, offY = c._offY;
+  if (!gW || !gH) return;
+  // Bounding box des 4 coins keystone en coordonnées view-locales
+  const pts = keystoneCorners.map(({fx, fy}) => ({
+    x: offX + fx * gW,
+    y: offY + fy * gH
+  }));
+  const minX = Math.min(...pts.map(p => p.x));
+  const minY = Math.min(...pts.map(p => p.y));
+  const maxX = Math.max(...pts.map(p => p.x));
+  const maxY = Math.max(...pts.map(p => p.y));
+  const margin = 40;
+  const W = window.innerWidth, H = window.innerHeight - 80;
+  calibViewZoom = Math.min(
+    (W - 2*margin) / (maxX - minX),
+    (H - 2*margin) / (maxY - minY),
+    1  // ne jamais grossir au-delà du zoom 1
+  );
+  calibPanX = margin - minX * calibViewZoom;
+  calibPanY = margin - minY * calibViewZoom;
+  applyCalibView();
+}
+
+function openCalib() {
+  deselAll();
+  calibPanX = 0; calibPanY = 0; calibViewZoom = 1;
+  document.getElementById('screen-calib').style.display = 'flex';
+  drawCalibGrid();
+  applyCalibView();
+}
+
+function closeCalib() {
+  document.getElementById('screen-calib').style.display = 'none';
+}
+
+function onScaleSlider(v) {
+  const val = Math.max(10, Math.min(400, parseFloat(v) || 100));
+  document.getElementById('scale-input').value = val;
+  calibScale = val / 100;
+  drawCalibGrid();
+}
+
+function onScaleInput(v) {
+  const val = Math.max(10, Math.min(400, parseFloat(v) || 100));
+  document.getElementById('scale-slider').value = val;
+  calibScale = val / 100;
+  drawCalibGrid();
+}
+
+function drawCalibGrid() {
+  const container = document.getElementById('calib-grid');
+  const W = window.innerWidth, H = window.innerHeight - 80;
+  const projW = parseFloat(document.getElementById('pw').value) || 120;
+  const projH = parseFloat(document.getElementById('ph').value) || 90;
+  const pxPerCm = Math.min(W / projW, H / projH) * calibScale;
+  const gridW = projW * pxPerCm;
+  const gridH = projH * pxPerCm;
+  const offX  = (W - gridW) / 2;
+  const offY  = (H - gridH) / 2;
+
+  container._pxPerCm = pxPerCm;
+  container._offX = offX; container._offY = offY;
+  container._gridW = gridW; container._gridH = gridH;
+
+  container.style.cssText = `position:absolute; left:${offX}px; top:${offY}px;`;
+  container.innerHTML = buildGridSVG(gridW, gridH, pxPerCm, projW, projH);
+  updateCalibGridTransform();
+  updateCalibHandlePositions();
+}
+
+function buildGridSVG(gridW, gridH, pxPerCm, projW, projH) {
+  const lines = [];
+  const step = 5;
+  for (let x = 0; x <= projW; x += step) {
+    const px = x * pxPerCm;
+    const major = x % 10 === 0;
+    lines.push(`<line x1="${px}" y1="0" x2="${px}" y2="${gridH}" stroke="${major?'rgba(255,255,255,0.55)':'rgba(255,255,255,0.2)'}" stroke-width="${major?1.2:0.6}"/>`);
+    if (major && x > 0) lines.push(`<text x="${px}" y="-5" fill="rgba(255,255,255,0.45)" font-size="11" text-anchor="middle" font-family="monospace">${x}</text>`);
+  }
+  for (let y = 0; y <= projH; y += step) {
+    const py = y * pxPerCm;
+    const major = y % 10 === 0;
+    lines.push(`<line x1="0" y1="${py}" x2="${gridW}" y2="${py}" stroke="${major?'rgba(255,255,255,0.55)':'rgba(255,255,255,0.2)'}" stroke-width="${major?1.2:0.6}"/>`);
+    if (major && y > 0) lines.push(`<text x="-5" y="${py}" fill="rgba(255,255,255,0.45)" font-size="11" text-anchor="end" dominant-baseline="middle" font-family="monospace">${y}</text>`);
+  }
+  const sq = 5 * pxPerCm;
+  const sqX = (gridW - sq) / 2, sqY = (gridH - sq) / 2;
+  lines.push(`<rect x="${sqX}" y="${sqY}" width="${sq}" height="${sq}" fill="rgba(232,160,32,0.15)" stroke="#e8a020" stroke-width="2.5"/>`);
+  lines.push(`<text x="${sqX+sq/2}" y="${sqY-7}" fill="#e8a020" font-size="12" text-anchor="middle" font-family="monospace" font-weight="bold">5 cm</text>`);
+  lines.push(`<text x="${sqX+sq/2}" y="${sqY+sq+16}" fill="#e8a020" font-size="12" text-anchor="middle" font-family="monospace" font-weight="bold">5 cm</text>`);
+  const cx = sqX + sq/2, cy = sqY + sq/2, cs = 6;
+  lines.push(`<line x1="${cx-cs}" y1="${cy}" x2="${cx+cs}" y2="${cy}" stroke="#e8a020" stroke-width="1.5"/>`);
+  lines.push(`<line x1="${cx}" y1="${cy-cs}" x2="${cx}" y2="${cy+cs}" stroke="#e8a020" stroke-width="1.5"/>`);
+  lines.push(`<rect x="0" y="0" width="${gridW}" height="${gridH}" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${gridW}" height="${gridH}" viewBox="-25 -25 ${gridW+50} ${gridH+50}">${lines.join('')}</svg>`;
+}
+
+function applyCalib() {
+  const container = document.getElementById('calib-grid');
+  pZoom = container._pxPerCm / PPcm;
+  pPanX = container._offX;
+  pPanY = container._offY;
+
+  const offX = container._offX, offY = container._offY;
+  const gW = container._gridW, gH = container._gridH;
+  const pc = document.getElementById('place-canvas');
+  if (isKeystoneIdentity()) {
+    pc.style.transform = '';
+  } else {
+    const src = [{x:offX,y:offY},{x:offX+gW,y:offY},{x:offX+gW,y:offY+gH},{x:offX,y:offY+gH}];
+    const dst = keystoneCorners.map(({fx,fy}) => ({x:offX+fx*gW, y:offY+fy*gH}));
+    pc.style.transform = homoToCSS(computeHomo(src, dst));
+  }
+
+  closeCalib();
+  updateProj();
+  pieces.forEach(p => { updPos(p); resizeP(p); });
+  toast('Calibration appliquée ✓');
+}
+
+// ── UTILITAIRES ──
+function show(id){['screen-config','screen-app'].forEach(s=>document.getElementById(s).style.display='none');const el=document.getElementById(id);el.style.display='flex';el.style.flexDirection='column';}
+function showLoading(msg){document.getElementById('loading-msg').textContent=msg||'Chargement…';document.getElementById('loading').classList.add('show');}
+function hideLoading(){document.getElementById('loading').classList.remove('show');}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
+
+// ── INIT ──
+async function init() {
+  setupCalibInteraction();
+  setupKeystoneHandles();
+  showLoading('Analyse du patron…');
+  try {
+    const res = await fetch(PROJ_BASE + '/analyse');
+    patronInfo = await res.json();
+    hideLoading();
+    showConfig();
+  } catch(e) {
+    hideLoading();
+    toast('Erreur lors du chargement du patron');
+  }
+}
+init();
+</script>
+</body>
+</html>

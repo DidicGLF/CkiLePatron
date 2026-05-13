@@ -123,6 +123,17 @@ cible--{{ c|lower|replace('é','e')|replace('è','e')|replace('ç','c') }}
   {% endif %}
 {% endmacro %}
 
+{# ---- STATUT BADGE ---- #}
+{% macro statut_badge(statut, nb=0, size='') -%}
+{% set labels = {'a_coudre': 'À coudre', 'en_cours': 'En cours', 'cousu': 'Cousu'} %}
+{% if statut and statut in labels %}
+<span class="statut statut--{{ statut }}{% if size %} statut--{{ size }}{% endif %}">
+  {{- labels[statut] -}}
+  {%- if statut == 'cousu' and nb > 1 %} × {{ nb }}{% endif %}
+</span>
+{% endif %}
+{%- endmacro %}
+
 {# ---- BADGE MARQUE ---- #}
 {% macro marque_badge(patron) -%}
   {% if patron.marque %}

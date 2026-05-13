@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import svg_arrow_left, svg_pencil, svg_trash, svg_file, svg_print, svg_project, svg_book, svg_link, cover, cible_badge, spools %}
+{% from "_macros.html" import svg_arrow_left, svg_pencil, svg_trash, svg_file, svg_print, svg_project, svg_book, svg_link, cover, cible_badge, spools, statut_badge %}
 
 {% block title %}{{ patron.nom }} — CkiLePatron{% endblock %}
 
@@ -47,7 +47,7 @@
       <h1 class="detail__name">{{ patron.nom }}</h1>
       {% if patron.description %}<p class="detail__desc">{{ patron.description }}</p>{% endif %}
 
-      {% if patron.difficulte or patron.url %}
+      {% if patron.difficulte or patron.url or True %}
       <div class="detail__diff">
         {% if patron.difficulte %}
         <div class="detail__diff-row">
@@ -55,6 +55,22 @@
           {{ spools(patron.difficulte, 'lg') }}
         </div>
         {% endif %}
+        <div class="detail__diff-row">
+          <span class="detail__diff-label">Statut</span>
+          <div class="statut-picker" data-statut-picker
+               data-slug="{{ patron.slug }}"
+               data-current="{{ patron.statut }}"
+               data-nb="{{ patron.nb_realisations }}">
+            {% for key, label in statuts.items() %}
+            <button class="statut-btn" data-s="{{ key }}">{{ label }}</button>
+            {% endfor %}
+            <span class="statut-counter">
+              <button class="counter-btn counter-dec" type="button">−</button>
+              <span class="counter-val">1</span>
+              <button class="counter-btn counter-inc" type="button">+</button>
+            </span>
+          </div>
+        </div>
         {% if patron.url %}
         <div class="detail__diff-row">
           <span class="detail__diff-label">Page d'origine</span>
@@ -88,7 +104,11 @@
             </div>
             <div class="fichiers__btns">
               {% if files.projecteur %}
-                <a class="btn btn--proj btn--sm" href="{{ url_for('projeter', slug=patron.slug, cible=cible_label) }}" target="_blank">{{ svg_project() }}<span>Projeter</span></a>
+                {% if fitz_disponible %}
+                  <a class="btn btn--proj btn--sm" href="{{ url_for('projection.page_projection', slug=patron.slug, cible=cible_label) }}" target="_blank">{{ svg_project() }}<span>Projeter</span></a>
+                {% else %}
+                  <a class="btn btn--proj btn--sm" href="{{ url_for('projeter', slug=patron.slug, cible=cible_label) }}" target="_blank">{{ svg_project() }}<span>Projeter</span></a>
+                {% endif %}
               {% endif %}
               {% if files.a4 %}
                 <a class="btn btn--file btn--sm" href="{{ url_for('fichier', slug=patron.slug, filename=files.a4) }}" target="_blank">{{ svg_file() }}<span>A4</span></a>
@@ -106,4 +126,8 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
 {% endblock %}
