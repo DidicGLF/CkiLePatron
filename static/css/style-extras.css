@@ -167,8 +167,23 @@ a.marque-pill:hover { color: var(--terracotta); border-color: var(--terracotta-3
 .grid--list .card__desc::before { content: "\00A0: "; }
 .grid--list .card__num { display: none; }
 .grid--list .card__tuto:not(.card__tuto--inline) { display: none; }
-.grid--list .card__tuto--inline::after { display: none; }
-.grid--list .card__tuto--inline { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; position: static; width: auto; height: auto; padding: 5px 10px; border-radius: var(--r); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; font-family: var(--sans); }
+.grid--list .card__tuto--inline {
+  display: inline-flex; align-items: center; justify-content: center;
+  position: relative; flex-shrink: 0;
+  width: 24px; height: 24px;
+  background: var(--terracotta); color: #fff;
+  border-radius: 6px;
+}
+.grid--list .card__tuto--inline .icon { width: 13px; height: 13px; }
+.grid--list .card__tuto--inline::after {
+  content: "Tutoriel";
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: var(--paper);
+  font-size: 11px; font-family: var(--sans); font-style: normal; font-weight: 500;
+  white-space: nowrap; padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.grid--list .card__tuto--inline:hover::after { opacity: 1; }
 .grid--list .card__row { flex-direction: column; align-items: flex-start; }
 @media (max-width: 720px) {
   .grid--list .card__body { flex-direction: column; align-items: flex-start; gap: 8px; }
@@ -191,6 +206,7 @@ a.marque-pill:hover { color: var(--terracotta); border-color: var(--terracotta-3
   border-radius: 999px; background: currentColor; flex-shrink: 0;
 }
 .statut--sm { font-size: 10px; padding: 2px 8px 2px 6px; }
+.card__meta-left .statut { height: 24px; box-sizing: border-box; }
 
 /* ---- Statut filter chips ---- */
 .chip-statut--en_cours.is-on  { background: var(--taupe); border-color: var(--taupe); }

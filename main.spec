@@ -8,7 +8,7 @@ a = Analysis(
         ('static',    'static'),
         ('extension', 'extension'),
     ],
-    hiddenimports=['flask', 'jinja2', 'werkzeug', 'click', 'fitz', 'app_projection'],
+    hiddenimports=['flask', 'jinja2', 'werkzeug', 'click', 'fitz', 'app_projection', 'PIL', 'PIL.Image'],
     noarchive=False,
 )
 

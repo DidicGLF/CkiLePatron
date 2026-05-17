@@ -106,6 +106,9 @@
               {% if files.projecteur %}
                 {% if fitz_disponible %}
                   <a class="btn btn--proj btn--sm" href="{{ url_for('projection.page_projection', slug=patron.slug, cible=cible_label) }}" target="_blank">{{ svg_project() }}<span>Projeter</span></a>
+                  {% if cible_label in patron.planches %}
+                  <a class="btn btn--soft btn--sm" href="{{ url_for('projection.page_projection', slug=patron.slug, cible=cible_label) }}" target="_blank" title="Planche de placement sauvegardée — cliquez pour reprendre">📐<span>Planche</span></a>
+                  {% endif %}
                 {% else %}
                   <a class="btn btn--proj btn--sm" href="{{ url_for('projeter', slug=patron.slug, cible=cible_label) }}" target="_blank">{{ svg_project() }}<span>Projeter</span></a>
                 {% endif %}

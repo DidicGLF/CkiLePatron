@@ -136,8 +136,11 @@ a { color: inherit; text-decoration: none; }
   background: var(--card); border-bottom: 1px solid var(--rule);
   display: flex; align-items: center; gap: 4px; padding: 0 14px;
   flex-shrink: 0; overflow-x: auto; overflow-y: hidden; z-index: 20;
+  transition: height 0.25s ease, border-bottom-width 0.25s ease;
 }
+#toolbar.hidden { height: 0; border-bottom-width: 0; overflow: hidden; }
 #toolbar::-webkit-scrollbar { height: 0; }
+#tb-show-tog { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 60px; height: 22px; background: var(--card); border: 1px solid var(--rule); border-top: none; border-radius: 0 0 8px 8px; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 9px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); z-index: 60; }
 .tsep { width: 1px; height: 22px; background: var(--rule); flex-shrink: 0; margin: 0 4px; }
 .tlbl {
   font-size: 10px; font-weight: 500; letter-spacing: 0.16em;
@@ -187,10 +190,10 @@ a { color: inherit; text-decoration: none; }
 .cz-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
 .cz-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
 .cz-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
-.piece { position: absolute; cursor: grab; touch-action: none; border: 1.5px solid rgba(184,84,71,0.35); border-radius: 3px; overflow: visible; background: white; }
+.piece { position: absolute; cursor: grab; touch-action: none; border: 1.5px solid rgba(184,84,71,0.35); border-radius: 3px; overflow: visible; background: transparent; }
 .piece:active { cursor: grabbing; }
 .piece.selected { border-color: var(--terracotta); box-shadow: 0 0 0 2px rgba(184,84,71,0.18), 0 6px 18px rgba(0,0,0,0.12); z-index: 900 !important; }
-.piece svg { width: 100%; height: 100%; display: block; pointer-events: none; overflow: hidden; }
+.piece svg { width: 100%; height: 100%; display: block; pointer-events: none; overflow: hidden; mix-blend-mode: multiply; }
 
 /* Panneau zones */
 #cut-panel { width: var(--panel); background: var(--card); border-left: 1px solid var(--rule); display: flex; flex-direction: column; flex-shrink: 0; }
@@ -295,6 +298,13 @@ input[type=range].calib-slider::-webkit-slider-thumb { -webkit-appearance: none;
 /* ── TOAST ── */
 #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--ink); color: var(--paper); padding: 8px 18px; border-radius: 999px; font-size: 12px; font-weight: 500; z-index: 9999; pointer-events: none; white-space: nowrap; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
 #toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── BANNIÈRE PLANCHE ── */
+#planche-banner { display: none; align-items: center; gap: 10px; padding: 9px 14px; background: color-mix(in oklab, var(--sage) 12%, var(--card)); border-bottom: 1px solid color-mix(in oklab, var(--sage) 25%, var(--rule)); font-family: var(--display); font-style: italic; font-size: 13px; color: var(--ink-2); flex-shrink: 0; }
+.pb-btn { font-family: var(--ui); font-style: normal; font-size: 11px; font-weight: 500; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--sage); background: transparent; color: var(--sage); cursor: pointer; white-space: nowrap; transition: 120ms; }
+.pb-btn:hover { background: var(--sage); color: #fff; }
+.pb-close { font-style: normal; font-size: 14px; color: var(--muted-2); cursor: pointer; margin-left: auto; line-height: 1; }
+.pb-close:hover { color: var(--ink); }
 </style>
 </head>
 <body>
@@ -379,7 +389,11 @@ input[type=range].calib-slider::-webkit-slider-thumb { -webkit-appearance: none;
       <span class="tlbl">Canvas</span>
       <button class="tbtn danger" onclick="clearPieces()" title="Retirer toutes les pièces du canvas">Tout retirer</button>
       <div class="tsep"></div>
+      <button class="tbtn blue-btn" onclick="savePlanche()" title="Sauvegarder la planche pour y revenir plus tard">💾 Sauvegarder</button>
+      <div class="tsep"></div>
       <button class="tbtn" onclick="togglePanel()">Pièces</button>
+      <div class="tsep"></div>
+      <button class="tbtn" onclick="toggleToolbar()" title="Masquer/afficher la barre">Menu</button>
     </div>
   </div>
 
@@ -395,6 +409,11 @@ input[type=range].calib-slider::-webkit-slider-thumb { -webkit-appearance: none;
           <span style="cursor:pointer;font-size:11px;color:var(--dim)" onclick="clearZones()">Effacer</span>
         </div>
         <div id="cp-hint">✏️ Dessine un rectangle autour de chaque pièce</div>
+        <div id="planche-banner">
+          <span>📐 Planche sauvegardée</span>
+          <button class="pb-btn" onclick="loadPlanche()">Reprendre</button>
+          <span class="pb-close" onclick="document.getElementById('planche-banner').style.display='none'" title="Ignorer">✕</span>
+        </div>
         <div id="zones-list"></div>
         <div id="cp-foot">
           <button class="tbtn blue-btn" style="width:100%" onclick="goPlace()">Placer les pièces →</button>
@@ -403,6 +422,7 @@ input[type=range].calib-slider::-webkit-slider-thumb { -webkit-appearance: none;
     </div>
 
     <div id="place-view">
+      <div id="tb-show-tog" onclick="toggleToolbar()">Menu</div>
       <div id="place-wrap">
         <div id="place-canvas">
           <div id="proj-zone" data-label=""></div>
@@ -673,6 +693,7 @@ async function startApp() {
   showCutMode();
   setupCutInteraction();
   setTimeout(cfit, 80);
+  checkPlanche();
 }
 
 function goConfig() { showConfig(); show('screen-config'); }
@@ -1055,6 +1076,8 @@ function flipS(){if(!selected)return;selected.flipped=!selected.flipped;applyT(s
 function removeS(){if(!selected)return;document.getElementById('pp-'+selected.zoneId)?.classList.remove('added');selected.el.remove();pieces=pieces.filter(p=>p.id!==selected.id);deselAll();}
 function clearPieces(){pieces.forEach(p=>p.el.remove());pieces=[];deselAll();renderPieceList();toast('Canvas vidé');}
 function togglePanel(){panelOpen=!panelOpen;document.getElementById('place-panel').classList.toggle('closed',!panelOpen);}
+let toolbarOpen = true;
+function toggleToolbar(){toolbarOpen=!toolbarOpen;document.getElementById('toolbar').classList.toggle('hidden',!toolbarOpen);document.getElementById('tb-show-tog').style.display=toolbarOpen?'none':'flex';setTimeout(()=>{pfit();},270);}
 
 // ── CALIBRATION (étape 1 : échelle uniquement) ──
 let calibScale = 1.0;
@@ -1325,6 +1348,106 @@ function show(id){['screen-config','screen-app'].forEach(s=>document.getElementB
 function showLoading(msg){document.getElementById('loading-msg').textContent=msg||'Chargement…';document.getElementById('loading').classList.add('show');}
 function hideLoading(){document.getElementById('loading').classList.remove('show');}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
+
+// ── PLANCHE ──
+let _savedPlancheData = null;
+
+async function checkPlanche() {
+  try {
+    const res = await fetch(PROJ_BASE + '/planche');
+    if (!res.ok) return;
+    _savedPlancheData = await res.json();
+    if (_savedPlancheData?.zones?.length > 0) {
+      document.getElementById('planche-banner').style.display = 'flex';
+    }
+  } catch(e) {}
+}
+
+async function savePlanche() {
+  const state = {
+    layers: currentLayers,
+    proj_w_cm: parseFloat(document.getElementById('pw').value) || 120,
+    proj_h_cm: parseFloat(document.getElementById('ph').value) || 90,
+    zones: zones.map(z => ({id:z.id, name:z.name, w_cm:z.w_cm, h_cm:z.h_cm, svgX:z.svgX, svgY:z.svgY, svgRW:z.svgRW, svgRH:z.svgRH})),
+    pieces: pieces.map(p => ({zoneId:p.zoneId, label:p.label, w_cm:p.w_cm, h_cm:p.h_cm, svgX:p.svgX, svgY:p.svgY, svgRW:p.svgRW, svgRH:p.svgRH, x:p.x, y:p.y, rotation:p.rotation, flipped:p.flipped}))
+  };
+  try {
+    const res = await fetch(PROJ_BASE + '/planche', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(state)});
+    if (res.ok) { _savedPlancheData = state; toast('Planche sauvegardée !'); }
+    else toast('Erreur de sauvegarde');
+  } catch(e) { toast('Erreur de sauvegarde'); }
+}
+
+function loadPlanche() {
+  const data = _savedPlancheData;
+  if (!data) return;
+  document.getElementById('planche-banner').style.display = 'none';
+
+  if (data.proj_w_cm) document.getElementById('pw').value = data.proj_w_cm;
+  if (data.proj_h_cm) document.getElementById('ph').value = data.proj_h_cm;
+
+  zones = (data.zones || []).map(z => ({...z}));
+  zones.forEach(z => { z.thumbUrl = makeSvgThumb(z.svgX, z.svgY, z.svgRW, z.svgRH); });
+  zCounter = zones.length > 0 ? Math.max(...zones.map(z => z.id)) : 0;
+  renderZonesList();
+  renderCutOverlays();
+
+  pieces.forEach(p => p.el.remove());
+  pieces = []; pCounter = 0; selected = null;
+
+  if (zones.length === 0) { toast('Planche vide'); return; }
+
+  document.getElementById('cut-view').style.display = 'none';
+  document.getElementById('cut-panel').style.display = 'none';
+  document.getElementById('place-view').style.display = 'block';
+  document.getElementById('tb-cut').style.display = 'none';
+  document.getElementById('tb-place').style.display = 'flex';
+  document.getElementById('mode-pill').className = 'place';
+  document.getElementById('mode-pill').textContent = '⊞ Placement';
+  renderPieceList();
+  setupPlaceInteraction();
+  updateProj();
+
+  for (const pd of (data.pieces || [])) {
+    const zone = zones.find(z => z.id === pd.zoneId);
+    if (zone) _addPieceRestore(zone, pd);
+  }
+
+  pfit();
+  deselAll();
+  toast('Planche restaurée !');
+}
+
+function _addPieceRestore(zone, pd) {
+  const canvas = document.getElementById('place-canvas'), id = ++pCounter;
+  const p = {
+    id, zoneId:zone.id, label:zone.name,
+    w_cm:zone.w_cm, h_cm:zone.h_cm,
+    svgX:zone.svgX, svgY:zone.svgY, svgRW:zone.svgRW, svgRH:zone.svgRH,
+    x:pd.x, y:pd.y, rotation:pd.rotation||0, flipped:pd.flipped||false, el:null
+  };
+  const el = document.createElement('div');
+  el.className = 'piece'; el.style.zIndex = 100 + id;
+  const rh = document.createElement('div'); rh.className = 'rot-h'; rh.textContent = '↻';
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svgEl = document.createElementNS(svgNS, 'svg');
+  svgEl.setAttribute('viewBox', `${zone.svgX} ${zone.svgY} ${zone.svgRW} ${zone.svgRH}`);
+  svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  svgEl.style.width='100%'; svgEl.style.height='100%';
+  svgEl.style.display='block'; svgEl.style.pointerEvents='none';
+  const srcSvg = document.querySelector('#svg-container svg');
+  if (srcSvg) { [...srcSvg.children].forEach(child => svgEl.appendChild(child.cloneNode(true))); }
+  const lbl = document.createElement('div'); lbl.className='piece-lbl'; lbl.textContent=zone.name;
+  el.appendChild(rh); el.appendChild(svgEl); el.appendChild(lbl);
+  canvas.appendChild(el);
+  p.el = el; pieces.push(p);
+  updPos(p); resizeP(p); applyT(p); setupDrag(p); setupRot(p, rh);
+  el.addEventListener('pointerdown', e => {
+    if (e.target === rh) return;
+    e.stopPropagation(); selPiece(p); p.el.style.zIndex = 100 + ++pCounter;
+  });
+  document.getElementById('pp-' + zone.id)?.classList.add('added');
+}
 
 // ── INIT ──
 async function init() {

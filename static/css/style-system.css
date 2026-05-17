@@ -387,10 +387,11 @@ header:not(.site-header) {
   color: var(--ink-2); font-size: 15px; line-height: 1.4; margin-top: 2px;
 }
 .card__meta {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; gap: 6px;
   margin-top: 6px; padding-top: 10px;
   border-top: 1px dashed var(--rule);
 }
+.card__meta-left { display: flex; align-items: center; gap: 6px; line-height: 1; }
 .card__marque {
   font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
 }

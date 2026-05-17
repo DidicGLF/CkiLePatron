@@ -2,3 +2,5 @@
 flask
 # PyMuPDF : optionnel, active la projection de patrons PDF
 PyMuPDF
+# Pillow : optionnel, optimise les images téléchargées (lossless)
+Pillow

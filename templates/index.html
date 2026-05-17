@@ -3,6 +3,18 @@
 
 {% block title %}Mes patrons — CkiLePatron{% endblock %}
 
+{% block head_extra %}
+<style>
+.card__meta-left { display:flex !important; align-items:center !important; gap:6px; line-height:1; }
+.card__meta-left .statut { height:24px; box-sizing:border-box; }
+.card__tuto--inline { display:none; }
+.grid--list .card { overflow:visible; }
+.grid--list .card__tuto--inline { display:inline-flex; align-items:center; justify-content:center; position:relative; bottom:auto; right:auto; flex-shrink:0; width:24px; height:24px; background:var(--terracotta); color:#fff; border-radius:6px; }
+.grid--list .card__tuto--inline .icon { width:13px; height:13px; }
+.card__tuto--inline::after, .grid--list .card__tuto--inline::after { content:none !important; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="shell">
 
@@ -92,6 +104,8 @@
         <div class="filter-pills">
           <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, difficulte=difficulte_filtre, tutoriel=tutoriel_filtre, q=recherche) }}"
              class="chip {% if not statut_filtre %}is-on{% endif %}">Tous</a>
+          <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, difficulte=difficulte_filtre, tutoriel=tutoriel_filtre, statut='aucun', q=recherche) }}"
+             class="chip {% if statut_filtre == 'aucun' %}is-on{% endif %}">À faire</a>
           {% for key, label in statuts.items() %}
           <a href="{{ url_for('index', cible=cible_filtre, marque=marque_filtre, difficulte=difficulte_filtre, tutoriel=tutoriel_filtre, statut=key, q=recherche) }}"
              class="chip chip-statut chip-statut--{{ key }} {% if statut_filtre == key %}is-on{% endif %}">{{ label }}</a>
@@ -123,10 +137,12 @@
           <h3 class="card__name">{{ p.nom }}</h3>
           {% if p.description %}<p class="card__desc">{{ p.description|truncate(100) }}</p>{% endif %}
         </div>
-        {% if p.tutoriel %}<span class="card__tuto card__tuto--inline">{{ svg_book() }}<span>Tutoriel</span></span>{% endif %}
-        {% if p.marque or p.statut %}
+        {% if p.marque or p.statut or p.tutoriel %}
           <div class="card__meta">
-            {{ statut_badge(p.statut, p.nb_realisations, 'sm') }}
+            <div class="card__meta-left" style="display:flex;align-items:center;gap:6px;line-height:1">
+              {{ statut_badge(p.statut, p.nb_realisations, 'sm') }}
+              {% if p.tutoriel %}<span class="card__tuto card__tuto--inline" title="Tutoriel">{{ svg_book() }}</span>{% endif %}
+            </div>
             {% if p.marque %}
             <span class="card__marque" style="margin-left:auto">{{ p.marque }}</span>
             <span class="card__marque" style="opacity:.6">N° {{ num }}</span>

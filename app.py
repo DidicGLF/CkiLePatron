@@ -16,6 +16,13 @@ except ImportError:
     proj_bp = None
     FITZ_DISPONIBLE = False
 
+# ── Module optionnel : optimisation d'images ──
+try:
+    from PIL import Image as _PIL_Image
+    PIL_DISPONIBLE = True
+except ImportError:
+    PIL_DISPONIBLE = False
+
 # Quand l'app est bundlée par PyInstaller :
 #   sys._MEIPASS  → dossier temporaire contenant templates/ et static/
 #   sys.executable → chemin du .exe, donc dossier de l'exe = dossier de travail
@@ -120,6 +127,7 @@ def scan_patron_folder(folder_path: str, folder_name: str) -> dict | None:
     fichiers: dict[str, dict[str, str]] = {}
     tutoriel: str | None = None
     images:   list[str] = []
+    planches: set[str] = set()
 
     try:
         entries = os.listdir(folder_path)
@@ -133,6 +141,18 @@ def scan_patron_folder(folder_path: str, folder_name: str) -> dict | None:
         ext       = Path(entry).suffix.lower()
         norm      = strip_copie(entry)
         norm_low  = norm.lower()
+
+        # ── Planches sauvegardées ──
+        if ext == '.json' and entry.startswith('planche_') and entry != 'patron.json':
+            try:
+                with open(os.path.join(folder_path, entry), encoding='utf-8') as f:
+                    pdata = json.load(f)
+                cible_val = pdata.get('cible', '')
+                if cible_val:
+                    planches.add(cible_val)
+            except Exception:
+                pass
+            continue
 
         # ── Images patron (pas les assemblages) ──
         if ext in IMAGE_EXTENSIONS:
@@ -194,6 +214,7 @@ def scan_patron_folder(folder_path: str, folder_name: str) -> dict | None:
         'marque_url':       extra.get('marque_url', ''),
         'statut':           extra.get('statut', '') if extra.get('statut', '') in STATUTS else '',
         'nb_realisations':  int(extra['nb_realisations']) if str(extra.get('nb_realisations', '')).isdigit() else 0,
+        'planches':         planches,
     }
 
 
@@ -294,7 +315,9 @@ def index():
         patrons = [p for p in patrons if p['tutoriel']]
 
     # Filtre statut
-    if statut_filtre and statut_filtre in STATUTS:
+    if statut_filtre == 'aucun':
+        patrons = [p for p in patrons if not p['statut']]
+    elif statut_filtre and statut_filtre in STATUTS:
         patrons = [p for p in patrons if p['statut'] == statut_filtre]
 
     # Recherche texte
@@ -531,6 +554,33 @@ def add_cors(response):
     return response
 
 
+COVER_MAX_PX = 900  # largeur max affichée ~445px, 900px = qualité retina confortable
+
+def optimise_image(path):
+    """Redimensionne à COVER_MAX_PX px si plus grand, puis ré-encode. N'écrit que si plus petit."""
+    if not PIL_DISPONIBLE:
+        return
+    try:
+        import io
+        original_size = os.path.getsize(path)
+        img = _PIL_Image.open(path)
+        fmt = img.format
+        if img.width > COVER_MAX_PX:
+            ratio = COVER_MAX_PX / img.width
+            new_h = round(img.height * ratio)
+            img = img.resize((COVER_MAX_PX, new_h), _PIL_Image.LANCZOS)
+        kwargs = {'optimize': True, 'format': fmt}
+        if fmt == 'JPEG':
+            kwargs['quality'] = 85  # qualité visuelle excellente post-redimensionnement
+        buf = io.BytesIO()
+        img.save(buf, **kwargs)
+        if buf.tell() < original_size:
+            with open(path, 'wb') as f:
+                f.write(buf.getvalue())
+    except Exception:
+        pass  # non critique
+
+
 @app.route('/api/importer', methods=['POST', 'OPTIONS'])
 def api_importer():
     if request.method == 'OPTIONS':
@@ -587,6 +637,7 @@ def api_importer():
             with urllib.request.urlopen(req, timeout=10) as resp:
                 with open(img_path, 'wb') as f:
                     f.write(resp.read())
+            optimise_image(img_path)
         except Exception:
             pass  # Image non critique, on continue
 

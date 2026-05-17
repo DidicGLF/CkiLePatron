@@ -3,7 +3,9 @@ Module optionnel — Projection de patrons via PyMuPDF.
 Pour désactiver : commenter la ligne `app.register_blueprint(proj_bp)` dans app.py
 """
 import io
+import json
 import os
+import re
 from flask import Blueprint, render_template, jsonify, abort, request
 
 try:
@@ -13,6 +15,17 @@ except ImportError:
     FITZ_DISPONIBLE = False
 
 proj_bp = Blueprint('projection', __name__)
+
+
+def _planche_path(slug, cible):
+    """Retourne (patron, chemin_absolu_planche_json) ou (None, None)."""
+    from app import find_patron_by_slug, PATRONS_DIR
+    patron = find_patron_by_slug(slug)
+    if not patron:
+        return None, None
+    cible_safe = re.sub(r'[^a-zA-Z0-9_-]', '_', cible)
+    path = os.path.join(PATRONS_DIR, patron['dossier'], f'planche_{cible_safe}.json')
+    return patron, path
 
 
 def _get_pdf_path(slug, cible):
@@ -120,6 +133,38 @@ def svg(slug, cible):
     }
     doc.close()
     return jsonify(result)
+
+
+@proj_bp.route('/patron/<slug>/projection/<cible>/planche', methods=['GET'])
+def get_planche(slug, cible):
+    patron, path = _planche_path(slug, cible)
+    if not patron:
+        abort(404)
+    if not os.path.isfile(path):
+        abort(404)
+    try:
+        with open(path, encoding='utf-8') as f:
+            data = json.load(f)
+        return jsonify(data)
+    except Exception:
+        abort(500)
+
+
+@proj_bp.route('/patron/<slug>/projection/<cible>/planche', methods=['POST'])
+def save_planche(slug, cible):
+    patron, path = _planche_path(slug, cible)
+    if not patron:
+        abort(404)
+    data = request.get_json(silent=True)
+    if not data:
+        abort(400)
+    data['cible'] = cible
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return jsonify({'status': 'ok'})
+    except Exception:
+        abort(500)
 
 
 @proj_bp.route('/patron/<slug>/projection/<cible>/texts')
