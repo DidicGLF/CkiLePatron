@@ -473,6 +473,16 @@ input[type=range].calib-slider::-webkit-slider-thumb { -webkit-appearance: none;
         style="width:60px;font-family:'DM Mono',monospace;font-size:13px;padding:4px 6px;border:1px solid rgba(255,255,255,0.25);border-radius:4px;background:rgba(255,255,255,0.1);color:white;text-align:center;"
         oninput="onScaleInput(this.value)"> %
       <div id="calib-sep2" style="width:1px;height:30px;background:rgba(255,255,255,0.15)"></div>
+      <div class="cu-label">Surface</div>
+      <input type="number" id="calib-pw" value="120" min="10" max="500" step="1"
+        style="width:56px;font-family:'DM Mono',monospace;font-size:13px;padding:4px 6px;border:1px solid rgba(255,255,255,0.25);border-radius:4px;background:rgba(255,255,255,0.1);color:white;text-align:center;"
+        oninput="onCalibDimInput()">
+      <span style="color:rgba(255,255,255,0.4);font-size:14px">×</span>
+      <input type="number" id="calib-ph" value="90" min="10" max="500" step="1"
+        style="width:56px;font-family:'DM Mono',monospace;font-size:13px;padding:4px 6px;border:1px solid rgba(255,255,255,0.25);border-radius:4px;background:rgba(255,255,255,0.1);color:white;text-align:center;"
+        oninput="onCalibDimInput()">
+      <span style="color:rgba(255,255,255,0.4);font-size:12px">cm</span>
+      <div style="width:1px;height:30px;background:rgba(255,255,255,0.15)"></div>
       <button class="calib-btn" onclick="calibFitAll()" title="Recadre la vue pour voir les 4 poignées (ne change pas l'échelle)">⊞ Voir tout</button>
       <button class="calib-btn" onclick="resetKeystone()" title="Remet les 4 coins à leur position par défaut">↺ Keystone</button>
       <button class="calib-btn ok" onclick="applyCalib()">✓ Appliquer</button>
@@ -1292,9 +1302,11 @@ function calibFitAll() {
 function openCalib() {
   deselAll();
   calibPanX = 0; calibPanY = 0; calibViewZoom = 1;
+  document.getElementById('calib-pw').value = document.getElementById('pw').value;
+  document.getElementById('calib-ph').value = document.getElementById('ph').value;
   document.getElementById('screen-calib').style.display = 'flex';
   drawCalibGrid();
-  applyCalibView();
+  calibFitAll();
 }
 
 function closeCalib() {
@@ -1314,6 +1326,15 @@ function onScaleInput(v) {
   document.getElementById('scale-slider').value = val;
   calibScale = val / 100;
   drawCalibGrid();
+}
+
+function onCalibDimInput() {
+  const w = Math.max(10, parseFloat(document.getElementById('calib-pw').value) || 120);
+  const h = Math.max(10, parseFloat(document.getElementById('calib-ph').value) || 90);
+  document.getElementById('pw').value = w;
+  document.getElementById('ph').value = h;
+  drawCalibGrid();
+  calibFitAll();
 }
 
 function drawCalibGrid() {
@@ -1340,25 +1361,23 @@ function drawCalibGrid() {
 function buildGridSVG(gridW, gridH, pxPerCm, projW, projH) {
   const lines = [];
   for (let x = 0; x <= projW; x++) {
-    const px = x * pxPerCm;
-    const major = x % 10 === 0;
-    const semi  = x % 5 === 0;
-    const stroke = major ? 'rgba(255,255,255,0.55)' : semi ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.12)';
-    const sw     = major ? 1.2 : semi ? 0.7 : 0.4;
+    const px     = x * pxPerCm;
+    const major  = x % 5 === 0;
+    const stroke = major ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.10)';
+    const sw     = major ? 1.2 : 0.35;
     lines.push(`<line x1="${px}" y1="0" x2="${px}" y2="${gridH}" stroke="${stroke}" stroke-width="${sw}"/>`);
-    if (major && x > 0) lines.push(`<text x="${px}" y="-5" fill="rgba(255,255,255,0.45)" font-size="11" text-anchor="middle" font-family="monospace">${x}</text>`);
+    if (major && x > 0) lines.push(`<text x="${px}" y="-6" fill="rgba(255,255,255,0.50)" font-size="10" text-anchor="middle" font-family="monospace">${x}</text>`);
   }
   for (let y = 0; y <= projH; y++) {
-    const py = y * pxPerCm;
-    const major = y % 10 === 0;
-    const semi  = y % 5 === 0;
-    const stroke = major ? 'rgba(255,255,255,0.55)' : semi ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.12)';
-    const sw     = major ? 1.2 : semi ? 0.7 : 0.4;
+    const py     = y * pxPerCm;
+    const major  = y % 5 === 0;
+    const stroke = major ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.10)';
+    const sw     = major ? 1.2 : 0.35;
     lines.push(`<line x1="0" y1="${py}" x2="${gridW}" y2="${py}" stroke="${stroke}" stroke-width="${sw}"/>`);
-    if (major && y > 0) lines.push(`<text x="-5" y="${py}" fill="rgba(255,255,255,0.45)" font-size="11" text-anchor="end" dominant-baseline="middle" font-family="monospace">${y}</text>`);
+    if (major && y > 0) lines.push(`<text x="-6" y="${py}" fill="rgba(255,255,255,0.50)" font-size="10" text-anchor="end" dominant-baseline="middle" font-family="monospace">${y}</text>`);
   }
-  lines.push(`<rect x="0" y="0" width="${gridW}" height="${gridH}" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>`);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${gridW}" height="${gridH}" viewBox="-25 -25 ${gridW+50} ${gridH+50}">${lines.join('')}</svg>`;
+  lines.push(`<rect x="0" y="0" width="${gridW}" height="${gridH}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${gridW}" height="${gridH}" viewBox="0 0 ${gridW} ${gridH}" overflow="visible">${lines.join('')}</svg>`;
 }
 
 function applyCalib() {

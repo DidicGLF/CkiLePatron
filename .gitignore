@@ -33,3 +33,6 @@ desktop.ini
 .vscode/
 .idea/
 *.swp
+
+# EXE
+CkiLePatron.exe

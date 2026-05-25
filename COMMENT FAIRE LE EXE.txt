@@ -1,0 +1,31 @@
+2. Télécharger l'image (une seule fois)
+
+  docker pull cdrx/pyinstaller-windows
+
+  ⏳ ~2-3 Go, à faire une seule fois.
+
+  ---
+  3. Builder le .exe de CkiLePatron
+
+  cd ~/Documents/Développement/CkiLePatron
+
+  docker run --rm -v "$(pwd):/src/" cdrx/pyinstaller-windows \
+    "pip install flask PyMuPDF Pillow && pyinstaller main.spec"
+
+  ⏳ Quelques minutes la première fois (pip télécharge les packages).
+
+  ---
+  4. Récupérer le résultat
+
+  ls dist/
+  # → CkiLePatron.exe
+
+  Le .exe est dans dist/CkiLePatron.exe. Tu peux le copier et le distribuer directement — il est autonome.
+
+  ---
+  En résumé (commande du quotidien)
+
+  Une fois Docker et l'image en place, tout se résume à ça depuis le dossier projet :
+
+  docker run --rm -v "$(pwd):/src/" cdrx/pyinstaller-windows \
+    "pip install flask PyMuPDF Pillow && pyinstaller main.spec"
