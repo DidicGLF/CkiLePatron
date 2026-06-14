@@ -259,10 +259,10 @@ a { color: inherit; text-decoration: none; }
 #calib-view  { position: absolute; inset: 0; transform-origin: 0 0; cursor: grab; user-select: none; touch-action: none; }
 #calib-grid  { position: absolute; transform-origin: top left; pointer-events: none; }
 #calib-grid svg { display: block; }
-.calib-handle { position: absolute; width: 20px; height: 20px; border-radius: 50%; background: #e8a020; border: 2.5px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.55); cursor: grab; transform: translate(-50%,-50%); z-index: 15; touch-action: none; transition: transform 0.1s; }
+.calib-handle { position: absolute; width: 20px; height: 20px; border-radius: 50%; background: transparent; border: 2.5px solid #e8a020; box-shadow: 0 2px 8px rgba(0,0,0,0.55); cursor: grab; transform: translate(-50%,-50%); z-index: 15; touch-action: none; transition: transform 0.1s; }
 .calib-handle:hover { transform: translate(-50%,-50%) scale(1.3); }
 .calib-handle.active { cursor: grabbing; transform: translate(-50%,-50%) scale(1.15); }
-.calib-handle.locked { background: #fff; border-color: #e8a020; box-shadow: 0 0 0 4px rgba(232,160,32,0.5), 0 2px 8px rgba(0,0,0,0.55); transform: translate(-50%,-50%) scale(1.25); cursor: default; }
+.calib-handle.locked { border-color: #fff; box-shadow: 0 0 0 4px rgba(232,160,32,0.5), 0 2px 8px rgba(0,0,0,0.55); transform: translate(-50%,-50%) scale(1.25); cursor: default; }
 #place-canvas { transform-origin: 0 0; }
 #calib-ui { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); padding: 14px 20px; display: flex; flex-direction: column; gap: 10px; z-index: 20; border-top: 1px solid rgba(255,255,255,0.1); }
 #calib-ui .cu-label { font-size: 10px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; }
@@ -371,6 +371,10 @@ input[type=range].calib-slider::-webkit-slider-thumb { -webkit-appearance: none;
       <button class="tbtn" onclick="goCut()">← Découper</button>
       <div class="tsep"></div>
       <button class="tbtn" onclick="openCalib()" title="Calibrer le projecteur">🎯 Calibrer</button>
+      <span id="calib-indicator" style="display:none;align-items:center;gap:4px">
+        <span style="font-size:10px;color:#2a9e5a;font-family:var(--ui);font-weight:600;letter-spacing:0.5px">✓ Calibré</span>
+        <button class="tbtn danger" onclick="resetCalibration()" title="Désactiver la calibration" style="font-size:10px;padding:4px 8px">✕</button>
+      </span>
       <div class="tsep"></div>
       <span class="tlbl">Zoom</span>
       <button class="tbtn" onclick="pzoom(1.2)" title="Zoom avant">+ Zoom</button>
@@ -987,7 +991,7 @@ function cancelM(){document.getElementById('modal').classList.remove('show');if(
 
 // ── PLACEMENT ──
 function updateProj(){const w=parseFloat(document.getElementById('pw').value)||120,h=parseFloat(document.getElementById('ph').value)||90,z=document.getElementById('proj-zone');z.style.left=pPanX+'px';z.style.top=pPanY+'px';z.style.width=(w*PPcm*pZoom)+'px';z.style.height=(h*PPcm*pZoom)+'px';z.setAttribute('data-label',w+' × '+h+' cm');}
-function pfit(){const w=parseFloat(document.getElementById('pw').value)||120,h=parseFloat(document.getElementById('ph').value)||90,wrap=document.getElementById('place-wrap'),avW=wrap.offsetWidth-(panelOpen?230:0)-80,avH=wrap.offsetHeight-80;pZoom=Math.min(avW/(w*PPcm),avH/(h*PPcm));pPanX=40;pPanY=40;updateProj();pieces.forEach(p=>{updPos(p);resizeP(p);});}
+function pfit(){if(calibApplied)return;const w=parseFloat(document.getElementById('pw').value)||120,h=parseFloat(document.getElementById('ph').value)||90,wrap=document.getElementById('place-wrap'),avW=wrap.offsetWidth-(panelOpen?230:0)-80,avH=wrap.offsetHeight-80;pZoom=Math.min(avW/(w*PPcm),avH/(h*PPcm));pPanX=40;pPanY=40;updateProj();pieces.forEach(p=>{updPos(p);resizeP(p);});}
 function pzoom(f){const wrap=document.getElementById('place-wrap'),cx=wrap.offsetWidth/2,cy=wrap.offsetHeight/2,old=pZoom;pZoom=Math.max(0.05,Math.min(10,pZoom*f));pPanX-=(cx-pPanX)*(pZoom/old-1);pPanY-=(cy-pPanY)*(pZoom/old-1);updateProj();pieces.forEach(p=>{updPos(p);resizeP(p);});}
 
 let ppPtrs={}, ppBg=false;
@@ -1086,6 +1090,7 @@ function toggleToolbar(){toolbarOpen=!toolbarOpen;document.getElementById('toolb
 
 // ── CALIBRATION (étape 1 : échelle uniquement) ──
 let calibScale = 1.0;
+let calibApplied = false;
 let calibPanX = 0, calibPanY = 0, calibViewZoom = 1;
 let keystoneCorners = [{fx:0,fy:0},{fx:1,fy:0},{fx:1,fy:1},{fx:0,fy:1}];
 let lockedHandleIdx = null;
@@ -1141,6 +1146,49 @@ function homoToCSS(H) {
 function isKeystoneIdentity() {
   const def = [{fx:0,fy:0},{fx:1,fy:0},{fx:1,fy:1},{fx:0,fy:1}];
   return !keystoneCorners.some(({fx,fy},i) => Math.abs(fx-def[i].fx)>0.001 || Math.abs(fy-def[i].fy)>0.001);
+}
+
+function reapplyCalibFromState() {
+  const W = window.innerWidth, H = window.innerHeight - 80;
+  const projW = parseFloat(document.getElementById('pw').value) || 120;
+  const projH = parseFloat(document.getElementById('ph').value) || 90;
+  const pxPerCm = Math.min(W / projW, H / projH) * calibScale;
+  const gridW = projW * pxPerCm;
+  const gridH = projH * pxPerCm;
+  const offX = (W - gridW) / 2;
+  const offY = (H - gridH) / 2;
+  pZoom = pxPerCm / PPcm;
+  pPanX = offX;
+  pPanY = offY;
+  const pc = document.getElementById('place-canvas');
+  if (isKeystoneIdentity()) {
+    pc.style.transform = '';
+  } else {
+    const src = [{x:offX,y:offY},{x:offX+gridW,y:offY},{x:offX+gridW,y:offY+gridH},{x:offX,y:offY+gridH}];
+    const dst = keystoneCorners.map(({fx,fy}) => ({x:offX+fx*gridW, y:offY+fy*gridH}));
+    pc.style.transform = homoToCSS(computeHomo(src, dst));
+  }
+  calibApplied = true;
+  updateProj();
+  pieces.forEach(p => { updPos(p); resizeP(p); });
+  updateCalibIndicator();
+}
+
+function updateCalibIndicator() {
+  const el = document.getElementById('calib-indicator');
+  if (el) el.style.display = calibApplied ? 'inline-flex' : 'none';
+}
+
+function resetCalibration() {
+  calibApplied = false;
+  calibScale = 1.0;
+  keystoneCorners = [{fx:0,fy:0},{fx:1,fy:0},{fx:1,fy:1},{fx:0,fy:1}];
+  document.getElementById('scale-slider').value = 100;
+  document.getElementById('scale-input').value = 100;
+  document.getElementById('place-canvas').style.transform = '';
+  updateCalibIndicator();
+  pfit();
+  toast('Calibration désactivée');
 }
 
 function updateCalibHandlePositions() {
@@ -1302,6 +1350,9 @@ function calibFitAll() {
 function openCalib() {
   deselAll();
   calibPanX = 0; calibPanY = 0; calibViewZoom = 1;
+  const scaleVal = Math.round(calibScale * 100);
+  document.getElementById('scale-slider').value = scaleVal;
+  document.getElementById('scale-input').value = scaleVal;
   document.getElementById('calib-pw').value = document.getElementById('pw').value;
   document.getElementById('calib-ph').value = document.getElementById('ph').value;
   document.getElementById('screen-calib').style.display = 'flex';
@@ -1381,25 +1432,8 @@ function buildGridSVG(gridW, gridH, pxPerCm, projW, projH) {
 }
 
 function applyCalib() {
-  const container = document.getElementById('calib-grid');
-  pZoom = container._pxPerCm / PPcm;
-  pPanX = container._offX;
-  pPanY = container._offY;
-
-  const offX = container._offX, offY = container._offY;
-  const gW = container._gridW, gH = container._gridH;
-  const pc = document.getElementById('place-canvas');
-  if (isKeystoneIdentity()) {
-    pc.style.transform = '';
-  } else {
-    const src = [{x:offX,y:offY},{x:offX+gW,y:offY},{x:offX+gW,y:offY+gH},{x:offX,y:offY+gH}];
-    const dst = keystoneCorners.map(({fx,fy}) => ({x:offX+fx*gW, y:offY+fy*gH}));
-    pc.style.transform = homoToCSS(computeHomo(src, dst));
-  }
-
+  reapplyCalibFromState();
   closeCalib();
-  updateProj();
-  pieces.forEach(p => { updPos(p); resizeP(p); });
   toast('Calibration appliquée ✓');
 }
 
@@ -1428,6 +1462,7 @@ async function savePlanche() {
     layers: currentLayers,
     proj_w_cm: parseFloat(document.getElementById('pw').value) || 120,
     proj_h_cm: parseFloat(document.getElementById('ph').value) || 90,
+    calib: calibApplied ? { scale: calibScale, corners: keystoneCorners.map(c => ({...c})) } : null,
     zones: zones.map(z => ({id:z.id, name:z.name, w_cm:z.w_cm, h_cm:z.h_cm, svgX:z.svgX, svgY:z.svgY, svgRW:z.svgRW, svgRH:z.svgRH})),
     pieces: pieces.map(p => ({zoneId:p.zoneId, label:p.label, w_cm:p.w_cm, h_cm:p.h_cm, svgX:p.svgX, svgY:p.svgY, svgRW:p.svgRW, svgRH:p.svgRH, x:p.x, y:p.y, rotation:p.rotation, flipped:p.flipped}))
   };
@@ -1474,6 +1509,12 @@ function loadPlanche() {
   }
 
   pfit();
+  if (data.calib) {
+    calibScale = data.calib.scale || 1.0;
+    keystoneCorners = (data.calib.corners || [{fx:0,fy:0},{fx:1,fy:0},{fx:1,fy:1},{fx:0,fy:1}]).map(c => ({...c}));
+    calibApplied = false;
+    reapplyCalibFromState();
+  }
   deselAll();
   toast('Planche restaurée !');
 }
