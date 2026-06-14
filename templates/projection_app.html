@@ -189,7 +189,8 @@ a { color: inherit; text-decoration: none; }
 .cz-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
 .cz-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
 .cz-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
-.piece { position: absolute; cursor: grab; touch-action: none; border: 1.5px solid rgba(184,84,71,0.35); border-radius: 3px; overflow: visible; background: transparent; }
+.piece { position: absolute; cursor: grab; touch-action: none; border: 1.5px solid transparent; border-radius: 3px; overflow: visible; background: transparent; transition: border-color 0.1s; }
+.piece:hover, .piece.dragging { border-color: rgba(184,84,71,0.45); }
 .piece:active { cursor: grabbing; }
 .piece.selected { border-color: var(--terracotta); box-shadow: 0 0 0 2px rgba(184,84,71,0.18), 0 6px 18px rgba(0,0,0,0.12); z-index: 900 !important; }
 .piece svg { width: 100%; height: 100%; display: block; pointer-events: none; overflow: hidden; mix-blend-mode: multiply; }
@@ -263,6 +264,8 @@ a { color: inherit; text-decoration: none; }
 .calib-handle:hover { transform: translate(-50%,-50%) scale(1.3); }
 .calib-handle.active { cursor: grabbing; transform: translate(-50%,-50%) scale(1.15); }
 .calib-handle.locked { border-color: #fff; box-shadow: 0 0 0 4px rgba(232,160,32,0.5), 0 2px 8px rgba(0,0,0,0.55); transform: translate(-50%,-50%) scale(1.25); cursor: default; }
+.calib-handle.snapping    { border-color: #60e080; box-shadow: 0 0 0 3px rgba(80,200,100,0.5), 0 2px 8px rgba(0,0,0,0.55); }
+.calib-handle.snap-target { border-color: #60e080; box-shadow: 0 0 0 2px rgba(80,200,100,0.4), 0 2px 8px rgba(0,0,0,0.55); }
 #place-canvas { transform-origin: 0 0; }
 #calib-ui { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); padding: 14px 20px; display: flex; flex-direction: column; gap: 10px; z-index: 20; border-top: 1px solid rgba(255,255,255,0.1); }
 #calib-ui .cu-label { font-size: 10px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; }
@@ -493,7 +496,7 @@ input[type=range].calib-slider::-webkit-slider-thumb { -webkit-appearance: none;
       <button class="calib-btn" onclick="closeCalib()">Annuler</button>
     </div>
     <div style="display:flex;gap:24px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px">
-      <span style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.4px">● Coin → glisser librement · cliquer pour verrouiller (<span style="color:rgba(255,200,80,0.6)">flèches = 1 cm · Shift+flèche = 0,5 cm · Échap = déverrouiller</span>)</span>
+      <span style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.4px">● Coin → glisser librement · cliquer pour verrouiller (<span style="color:rgba(255,200,80,0.6)">flèches = 1 cm · Shift+flèche = 0,1 cm · Échap = déverrouiller</span>)</span>
       <span style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.4px">Glisser / Molette → navigation seulement (n'affecte pas l'échelle)</span>
       <span style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.4px">Double-clic → recentrer · <span style="color:rgba(255,200,80,0.6)">Shift+double-clic → tout voir</span></span>
     </div>
@@ -1074,7 +1077,7 @@ function updPos(p){p.el.style.left=(pPanX+p.x*PPcm*pZoom)+'px';p.el.style.top=(p
 function resizeP(p){p.el.style.width=(p.w_cm*PPcm*pZoom)+'px';p.el.style.height=(p.h_cm*PPcm*pZoom)+'px';applyT(p);}
 function applyT(p){p.el.style.transform=`rotate(${p.rotation}deg) scaleX(${p.flipped?-1:1})`;}
 
-function setupDrag(p){let dr=false,pid=null,sx,sy,spx,spy;p.el.addEventListener('pointerdown',e=>{if(e.target.classList.contains('rot-h'))return;dr=true;pid=e.pointerId;p.el.setPointerCapture(e.pointerId);sx=e.clientX;sy=e.clientY;spx=p.x;spy=p.y;e.stopPropagation();});p.el.addEventListener('pointermove',e=>{if(!dr||e.pointerId!==pid)return;p.x=spx+(e.clientX-sx)/(PPcm*pZoom);p.y=spy+(e.clientY-sy)/(PPcm*pZoom);updPos(p);});p.el.addEventListener('pointerup',e=>{if(e.pointerId!==pid)return;dr=false;updSelInfo();});}
+function setupDrag(p){let dr=false,pid=null,sx,sy,spx,spy;p.el.addEventListener('pointerdown',e=>{if(e.target.classList.contains('rot-h'))return;dr=true;pid=e.pointerId;p.el.setPointerCapture(e.pointerId);p.el.classList.add('dragging');sx=e.clientX;sy=e.clientY;spx=p.x;spy=p.y;e.stopPropagation();});p.el.addEventListener('pointermove',e=>{if(!dr||e.pointerId!==pid)return;p.x=spx+(e.clientX-sx)/(PPcm*pZoom);p.y=spy+(e.clientY-sy)/(PPcm*pZoom);updPos(p);});p.el.addEventListener('pointerup',e=>{if(e.pointerId!==pid)return;dr=false;p.el.classList.remove('dragging');updSelInfo();});}
 function setupRot(p,h){let rot=false,sa=0,sr=0;h.addEventListener('pointerdown',e=>{e.stopPropagation();rot=true;h.setPointerCapture(e.pointerId);const r=p.el.getBoundingClientRect();sa=Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))*180/Math.PI;sr=p.rotation;});h.addEventListener('pointermove',e=>{if(!rot)return;const r=p.el.getBoundingClientRect();const a=Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))*180/Math.PI;p.rotation=Math.round(sr+a-sa);applyT(p);updSelInfo();});h.addEventListener('pointerup',()=>rot=false);}
 
 function selPiece(p){deselAll();selected=p;p.el.classList.add('selected');updSelInfo();}
@@ -1238,21 +1241,40 @@ function setupKeystoneHandles() {
       const c = document.getElementById('calib-grid');
       const gW = c._gridW, gH = c._gridH;
       if (!gW || !gH) return;
-      keystoneCorners[idx] = {
-        fx: startFX + dx / (calibViewZoom * gW),
-        fy: startFY + dy / (calibViewZoom * gH)
-      };
+
+      let newFX = startFX + dx / (calibViewZoom * gW);
+      let newFY = startFY + dy / (calibViewZoom * gH);
+
+      // Aimantation avec les poignées adjacentes
+      const SNAP_PX = 14;
+      const snapFX = SNAP_PX / (calibViewZoom * gW);
+      const snapFY = SNAP_PX / (calibViewZoom * gH);
+      const hPartner = [1, 0, 3, 2][idx]; // même fy (alignement horizontal)
+      const vPartner = [3, 2, 1, 0][idx]; // même fx (alignement vertical)
+      const handles = document.querySelectorAll('.calib-handle');
+      let snappedH = false, snappedV = false;
+      if (Math.abs(newFY - keystoneCorners[hPartner].fy) < snapFY) { newFY = keystoneCorners[hPartner].fy; snappedH = true; }
+      if (Math.abs(newFX - keystoneCorners[vPartner].fx) < snapFX) { newFX = keystoneCorners[vPartner].fx; snappedV = true; }
+      handles[idx].classList.toggle('snapping', snappedH || snappedV);
+      handles[hPartner].classList.toggle('snap-target', snappedH);
+      handles[vPartner].classList.toggle('snap-target', snappedV);
+
+      keystoneCorners[idx] = { fx: newFX, fy: newFY };
       updateCalibGridTransform();
       updateCalibHandlePositions();
     });
     handle.addEventListener('pointerup', () => {
       dragging = false; handle.classList.remove('active');
+      document.querySelectorAll('.calib-handle').forEach(h => h.classList.remove('snapping', 'snap-target'));
       if (!moved) {
         if (lockedHandleIdx === idx) unlockHandle();
         else lockHandle(idx);
       }
     });
-    handle.addEventListener('pointercancel', () => { dragging = false; handle.classList.remove('active'); });
+    handle.addEventListener('pointercancel', () => {
+      dragging = false; handle.classList.remove('active');
+      document.querySelectorAll('.calib-handle').forEach(h => h.classList.remove('snapping', 'snap-target'));
+    });
   });
 
   // Clic hors d'une poignée → déverrouille
@@ -1271,7 +1293,7 @@ function setupKeystoneHandles() {
     const c = document.getElementById('calib-grid');
     const pxPerCm = c._pxPerCm, gW = c._gridW, gH = c._gridH;
     if (!pxPerCm || !gW || !gH) return;
-    const step = e.shiftKey ? 0.5 : 1;
+    const step = e.shiftKey ? 0.1 : 1;
     const dfx = step * pxPerCm / gW;
     const dfy = step * pxPerCm / gH;
     const corner = {...keystoneCorners[lockedHandleIdx]};
@@ -1414,18 +1436,18 @@ function buildGridSVG(gridW, gridH, pxPerCm, projW, projH) {
   for (let x = 0; x <= projW; x++) {
     const px     = x * pxPerCm;
     const major  = x % 5 === 0;
-    const stroke = major ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.10)';
+    const stroke = major ? 'rgba(80,200,100,0.85)' : 'rgba(255,255,255,0.50)';
     const sw     = major ? 1.2 : 0.35;
     lines.push(`<line x1="${px}" y1="0" x2="${px}" y2="${gridH}" stroke="${stroke}" stroke-width="${sw}"/>`);
-    if (major && x > 0) lines.push(`<text x="${px}" y="-6" fill="rgba(255,255,255,0.50)" font-size="10" text-anchor="middle" font-family="monospace">${x}</text>`);
+    if (major && x > 0) lines.push(`<text x="${px}" y="-6" fill="rgba(80,200,100,0.75)" font-size="10" text-anchor="middle" font-family="monospace">${x}</text>`);
   }
   for (let y = 0; y <= projH; y++) {
     const py     = y * pxPerCm;
     const major  = y % 5 === 0;
-    const stroke = major ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.10)';
+    const stroke = major ? 'rgba(80,200,100,0.85)' : 'rgba(255,255,255,0.50)';
     const sw     = major ? 1.2 : 0.35;
     lines.push(`<line x1="0" y1="${py}" x2="${gridW}" y2="${py}" stroke="${stroke}" stroke-width="${sw}"/>`);
-    if (major && y > 0) lines.push(`<text x="-6" y="${py}" fill="rgba(255,255,255,0.50)" font-size="10" text-anchor="end" dominant-baseline="middle" font-family="monospace">${y}</text>`);
+    if (major && y > 0) lines.push(`<text x="-6" y="${py}" fill="rgba(80,200,100,0.75)" font-size="10" text-anchor="end" dominant-baseline="middle" font-family="monospace">${y}</text>`);
   }
   lines.push(`<rect x="0" y="0" width="${gridW}" height="${gridH}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>`);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${gridW}" height="${gridH}" viewBox="0 0 ${gridW} ${gridH}" overflow="visible">${lines.join('')}</svg>`;
